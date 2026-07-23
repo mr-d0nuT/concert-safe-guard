@@ -290,6 +290,15 @@
                     <input type="text" id="joinNameInput" required placeholder="Ej: Sofía, Lucía, Marta..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 font-medium">
                 </div>
 
+                <!-- Live Sync Status Banner on Mobile -->
+                <div id="mobileLiveStatus" class="hidden p-3 bg-slate-950 border border-indigo-500/40 rounded-xl text-xs space-y-1">
+                    <div class="flex items-center justify-between text-indigo-300 font-bold">
+                        <span><i class="fa-solid fa-signal text-emerald-400 mr-1 animate-pulse"></i> Transmisión GPS en vivo</span>
+                        <span id="mobileSyncCount" class="text-[10px] bg-indigo-900/60 px-2 py-0.5 rounded text-indigo-200">0 envíos</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400" id="mobileLastSyncTime">Iniciando geolocalización...</p>
+                </div>
+
                 <!-- Background persistence features info banner -->
                 <div class="space-y-2">
                     <div class="p-3 bg-indigo-950/50 border border-indigo-800/50 rounded-xl flex items-start gap-3 text-xs text-indigo-200">
@@ -368,14 +377,30 @@
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'concert-tracker-app';
+        // Extract credentials from URL params if opening via QR Code on mobile device
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        let appId = typeof __app_id !== 'undefined' ? __app_id : 'concert-tracker-app';
+        if (urlParams.has('groupId')) {
+            appId = urlParams.get('groupId');
+        }
+
         let firebaseConfig = { apiKey: "demo", authDomain: "demo.firebaseapp.com", projectId: "demo" };
         if (typeof __firebase_config !== 'undefined') {
             try { firebaseConfig = JSON.parse(__firebase_config); } catch (e) { console.error("Firebase config parse error", e); }
+        } else if (urlParams.has('fbCfg')) {
+            try {
+                const decodedCfg = decodeURIComponent(atob(urlParams.get('fbCfg')));
+                firebaseConfig = JSON.parse(decodedCfg);
+            } catch(e) {
+                console.error("Failed to parse fbCfg from URL parameters", e);
+            }
         }
 
         let app, db, auth;
         let currentUser = null;
+        let authPromiseResolve = null;
+        const authReadyPromise = new Promise((resolve) => { authPromiseResolve = resolve; });
         
         let myDeviceId = localStorage.getItem('concert_device_id');
         if (!myDeviceId) {
@@ -385,6 +410,8 @@
 
         let wakeLockSentinel = null;
         let keepAliveAudio = null;
+        let gpsSyncCounter = 0;
+        let currentPosCache = null;
 
         async function enableWakeLock() {
             if ('wakeLock' in navigator) {
@@ -442,9 +469,7 @@
         let parentPosition = { lat: 41.3634, lng: 2.1526 };
         let myRegisteredName = localStorage.getItem('concert_my_name') || '';
         
-        // Pure Real GPS Devices Array (Starts completely empty)
         let groupMembers = [];
-
         let map, parentMarker, radiusCircle;
         let memberMarkers = {};
 
@@ -457,8 +482,7 @@
         };
 
         function checkUrlForJoinGroup() {
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('joinGroup') === '1') {
+            if (urlParams.get('joinGroup') === '1') {
                 document.getElementById('joinGroupModal').classList.remove('hidden');
                 document.getElementById('sosWidgetCard').classList.remove('hidden');
                 if (myRegisteredName) {
@@ -477,21 +501,25 @@
                 if (customToken) {
                     signInWithCustomToken(auth, customToken).then((res) => {
                         currentUser = res.user;
+                        if (authPromiseResolve) authPromiseResolve();
                         subscribeFirestoreSync();
                     }).catch(() => {
                         signInAnonymously(auth).then(res => {
                             currentUser = res.user;
+                            if (authPromiseResolve) authPromiseResolve();
                             subscribeFirestoreSync();
                         });
                     });
                 } else {
                     signInAnonymously(auth).then(res => {
                         currentUser = res.user;
+                        if (authPromiseResolve) authPromiseResolve();
                         subscribeFirestoreSync();
                     });
                 }
             } catch (err) {
-                console.warn("Firebase initialized in local/offline fallback mode:", err);
+                console.warn("Firebase initialized in local mode:", err);
+                if (authPromiseResolve) authPromiseResolve();
             }
         }
 
@@ -562,6 +590,46 @@
             return colors[Math.abs(hash) % colors.length];
         }
 
+        async function pushLocationToServer(lat, lng) {
+            await authReadyPromise;
+            currentPosCache = { lat, lng };
+
+            let batteryLevel = 90;
+            if (navigator.getBattery) {
+                try {
+                    const b = await navigator.getBattery();
+                    batteryLevel = Math.round(b.level * 100);
+                } catch(err){}
+            }
+
+            if (db && currentUser) {
+                try {
+                    const deviceDoc = doc(db, 'artifacts', appId, 'public', 'data', 'group_positions', myDeviceId);
+                    await setDoc(deviceDoc, {
+                        name: myRegisteredName,
+                        lat: lat,
+                        lng: lng,
+                        battery: batteryLevel,
+                        updated: Date.now()
+                    }, { merge: true });
+
+                    gpsSyncCounter++;
+                    const mobileStatus = document.getElementById('mobileLiveStatus');
+                    const syncCountLabel = document.getElementById('mobileSyncCount');
+                    const lastSyncLabel = document.getElementById('mobileLastSyncTime');
+
+                    if (mobileStatus) mobileStatus.classList.remove('hidden');
+                    if (syncCountLabel) syncCountLabel.innerText = `${gpsSyncCounter} envíos OK`;
+                    if (lastSyncLabel) {
+                        const nowStr = new Date().toLocaleTimeString();
+                        lastSyncLabel.innerText = `Última sincronización con la nube: ${nowStr}`;
+                    }
+                } catch (e) {
+                    console.error("Error setting device position in Firestore:", e);
+                }
+            }
+        }
+
         window.handleDeviceRegistration = function(e) {
             e.preventDefault();
             const nameInput = document.getElementById('joinNameInput').value.trim();
@@ -582,28 +650,8 @@
                     async (pos) => {
                         const lat = pos.coords.latitude;
                         const lng = pos.coords.longitude;
-                        
-                        let batteryLevel = 90;
-                        if (navigator.getBattery) {
-                            try {
-                                const b = await navigator.getBattery();
-                                batteryLevel = Math.round(b.level * 100);
-                            } catch(err){}
-                        }
-
-                        if (db && currentUser) {
-                            const deviceDoc = doc(db, 'artifacts', appId, 'public', 'data', 'group_positions', myDeviceId);
-                            await setDoc(deviceDoc, {
-                                name: myRegisteredName,
-                                lat: lat,
-                                lng: lng,
-                                battery: batteryLevel,
-                                updated: Date.now()
-                            }, { merge: true });
-                        }
-
-                        document.getElementById('joinGroupModal').classList.add('hidden');
-                        alertModal(`✅ ¡Sincronizado con éxito como "${myRegisteredName}"!\n\nSe ha activado el motor de transmisión continua en segundo plano. Puedes guardar el móvil en tu bolsillo.`);
+                        await pushLocationToServer(lat, lng);
+                        btn.innerHTML = `<i class="fa-solid fa-check text-emerald-400 mr-1"></i> Transmitiendo GPS en vivo`;
                     },
                     (err) => {
                         btn.disabled = false;
@@ -612,12 +660,21 @@
                     },
                     { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 }
                 );
+
+                // Continuous Heartbeat Interval every 8 seconds
+                setInterval(() => {
+                    if (currentPosCache) {
+                        pushLocationToServer(currentPosCache.lat, currentPosCache.lng);
+                    }
+                }, 8000);
+
             } else {
                 alertModal("El navegador de este teléfono no soporta geolocalización GPS.");
             }
         };
 
         window.sendSosSignal = async function() {
+            await authReadyPromise;
             if (db && currentUser) {
                 const deviceDoc = doc(db, 'artifacts', appId, 'public', 'data', 'group_positions', myDeviceId);
                 await setDoc(deviceDoc, { sos: true, updated: Date.now() }, { merge: true });
@@ -635,6 +692,16 @@
 
             const joinUrl = new URL(window.location.href);
             joinUrl.searchParams.set('joinGroup', '1');
+            joinUrl.searchParams.set('groupId', appId);
+
+            // Safely embed encoded firebaseConfig into URL parameter for full cross-device synchronization
+            if (firebaseConfig && firebaseConfig.apiKey !== 'demo') {
+                try {
+                    const encodedCfg = btoa(encodeURIComponent(JSON.stringify(firebaseConfig)));
+                    joinUrl.searchParams.set('fbCfg', encodedCfg);
+                } catch(e) {}
+            }
+
             document.getElementById('groupCodeInput').value = joinUrl.href;
 
             const qrContainer = document.getElementById('qrcode');
@@ -1012,7 +1079,7 @@
                         renderRoster();
                     },
                     (error) => {
-                        console.warn("GPS Permission standard check notice.");
+                        console.warn("GPS Permission check notice.");
                     },
                     { enableHighAccuracy: true }
                 );
@@ -1078,4 +1145,3 @@
     </script>
 </body>
 </html>
- 
