@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ConcertSafe Guard - Localizador Real y Diagnóstico de Campo</title>
+    <title>ConcertSafe Guard - Localizador Real en Vivo</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -37,7 +37,7 @@
     <!-- QRCode.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-    <!-- MQTT WebSockets CDN for Guaranteed Cross-Device Instant Sync -->
+    <!-- MQTT WebSockets CDN -->
     <script src="https://cdn.jsdelivr.net/npm/mqtt@4.3.7/dist/mqtt.min.js"></script>
 
     <style>
@@ -91,9 +91,9 @@
                 <div>
                     <h1 class="font-bold text-lg leading-tight tracking-wide text-white flex items-center gap-2">
                         ConcertSafe Guard
-                        <span id="cloudStatusBadge" class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-                            <span id="cloudStatusText">Conectando Nube...</span>
+                        <span id="cloudStatusBadge" class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                            <span id="cloudStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                            <span id="cloudStatusText">Conectando...</span>
                         </span>
                     </h1>
                     <p class="text-xs text-slate-400">Sala: <strong id="currentGroupIdDisplay" class="text-indigo-400 font-mono">Cargando...</strong></p>
@@ -102,26 +102,20 @@
 
             <!-- Header Controls -->
             <div class="flex items-center gap-2 flex-wrap">
-                <!-- Test Button -->
-                <button onclick="openDiagnosticModal()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-slate-950 font-black text-xs flex items-center gap-2 shadow-lg shadow-amber-500/20 transition transform active:scale-95 animate-pulse">
-                    <i class="fa-solid fa-vial-circle-check text-sm"></i>
-                    <span>🧪 TEST REAL</span>
-                </button>
-
                 <!-- Manual Join Code Button -->
-                <button onclick="promptManualGroupCode()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition active:scale-95" title="Cambiar o escribir código de sala">
+                <button onclick="promptManualGroupCode()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition active:scale-95" title="Cambiar o escribir código de sala">
                     <i class="fa-solid fa-key text-indigo-400"></i>
-                    <span class="hidden sm:inline">Código</span>
+                    <span>Código Sala</span>
                 </button>
 
                 <!-- Alarm Toggle -->
-                <button id="alarmToggleBtn" onclick="toggleAudioAlarm()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium flex items-center gap-2 transition active:scale-95" title="Activar/Desactivar Alarma Sonora">
+                <button id="alarmToggleBtn" onclick="toggleAudioAlarm()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium flex items-center gap-2 transition active:scale-95" title="Activar/Desactivar Alarma Sonora">
                     <i id="alarmIcon" class="fa-solid fa-bell text-amber-400"></i>
                     <span id="alarmBtnText" class="hidden sm:inline">Alarma</span>
                 </button>
 
                 <!-- Scan QR Button -->
-                <button onclick="openScanToLocateModal()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition transform active:scale-95">
+                <button onclick="openScanToLocateModal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition transform active:scale-95">
                     <i class="fa-solid fa-qrcode text-sm"></i>
                     <span>Vincular Móvil</span>
                 </button>
@@ -253,17 +247,17 @@
         <section class="lg:col-span-4 flex flex-col gap-4">
 
             <!-- Protocol Safety Banner -->
-            <div class="bg-slate-900 border border-amber-500/40 rounded-2xl p-3.5 shadow-xl bg-gradient-to-b from-amber-950/20 to-slate-900">
+            <div class="bg-slate-900 border border-indigo-500/30 rounded-2xl p-3.5 shadow-xl bg-gradient-to-b from-indigo-950/30 to-slate-900">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-amber-400 flex items-center gap-1.5 uppercase tracking-wider">
-                        <i class="fa-solid fa-shield-cat text-amber-400 text-sm"></i> Protocolo Anti-Pérdida
+                    <span class="text-xs font-bold text-indigo-300 flex items-center gap-1.5 uppercase tracking-wider">
+                        <i class="fa-solid fa-shield-cat text-indigo-400 text-sm"></i> Monitoreo en Tiempo Real
                     </span>
-                    <button onclick="openSafetyTipsModal()" class="text-[11px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/40 font-semibold hover:bg-amber-500/30 transition">
-                        Ver Reglas
+                    <button onclick="openSafetyTipsModal()" class="text-[11px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/40 font-semibold hover:bg-indigo-500/30 transition">
+                        Ver Consejos
                     </button>
                 </div>
                 <p class="text-[11px] text-slate-300 mt-1 leading-snug">
-                    Ejecuta el <strong>Test Real</strong> antes de entrar para verificar la alarma sonora y el GPS.
+                    Vincular los teléfonos mediante el código QR para monitoreo GPS continuo y alertas sonoras de perímetro.
                 </p>
             </div>
 
@@ -283,12 +277,9 @@
                 </p>
 
                 <!-- Action Buttons -->
-                <div class="grid grid-cols-2 gap-2 mt-3">
-                    <button onclick="openScanToLocateModal()" class="py-2.5 px-3 bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-lg shadow-indigo-600/25 active:scale-95">
-                        <i class="fa-solid fa-qrcode"></i> Ver QR / Código
-                    </button>
-                    <button onclick="addSimulatedMinor()" class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95">
-                        <i class="fa-solid fa-user-plus"></i> + Probar Menor
+                <div class="mt-3">
+                    <button onclick="openScanToLocateModal()" class="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition shadow-lg shadow-indigo-600/25 active:scale-95">
+                        <i class="fa-solid fa-qrcode text-sm"></i> Vincular Nuevo Teléfono / Ver QR
                     </button>
                 </div>
             </div>
@@ -314,119 +305,13 @@
 
     </main>
 
-    <!-- REAL TEST & DIAGNOSTICS SUITE MODAL -->
-    <div id="diagnosticModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[120] flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-amber-500/50 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            
-            <button onclick="closeDiagnosticModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center transition">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-rose-600 flex items-center justify-center text-slate-950 text-2xl font-black shadow-lg shadow-amber-500/30">
-                    <i class="fa-solid fa-vial-circle-check"></i>
-                </div>
-                <div>
-                    <h2 class="text-lg font-black text-white tracking-wide">Test de Diagnóstico en Vivo</h2>
-                    <p class="text-xs text-slate-400">Verificación previa para evitar pérdidas de menores.</p>
-                </div>
-            </div>
-
-            <!-- Test Steps Progress Bar -->
-            <div class="space-y-3 mb-6">
-                
-                <!-- Test Step 1: Audio Siren -->
-                <div class="p-3 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-3">
-                        <div id="diagAudioIcon" class="w-9 h-9 rounded-xl bg-slate-800 text-slate-400 flex items-center justify-center text-sm font-bold">
-                            1
-                        </div>
-                        <div>
-                            <h3 class="text-xs font-bold text-white">Alarma Sonora y Altavoces</h3>
-                            <p class="text-[11px] text-slate-400" id="diagAudioDesc">Probar sirena fuerte de alerta</p>
-                        </div>
-                    </div>
-                    <button onclick="runTestAudio()" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition">
-                        Probar Sonido
-                    </button>
-                </div>
-
-                <!-- Test Step 2: High-Precision GPS -->
-                <div class="p-3 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-3">
-                        <div id="diagGpsIcon" class="w-9 h-9 rounded-xl bg-slate-800 text-slate-400 flex items-center justify-center text-sm font-bold">
-                            2
-                        </div>
-                        <div>
-                            <h3 class="text-xs font-bold text-white">Precisión Hardware GPS</h3>
-                            <p class="text-[11px] text-slate-400" id="diagGpsDesc">Medir margen de error de tu antena</p>
-                        </div>
-                    </div>
-                    <button onclick="runTestGps()" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition">
-                        Comprobar GPS
-                    </button>
-                </div>
-
-                <!-- Test Step 3: Cloud Ping & Sync -->
-                <div class="p-3 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-3">
-                        <div id="diagSyncIcon" class="w-9 h-9 rounded-xl bg-slate-800 text-slate-400 flex items-center justify-center text-sm font-bold">
-                            3
-                        </div>
-                        <div>
-                            <h3 class="text-xs font-bold text-white">Sincronización MQTT en Vivo</h3>
-                            <p class="text-[11px] text-slate-400" id="diagSyncDesc">Comprobar velocidad de transmisión</p>
-                        </div>
-                    </div>
-                    <button onclick="runTestSync()" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition">
-                        Probar Conexión
-                    </button>
-                </div>
-
-                <!-- Test Step 4: Full Escape Simulation -->
-                <div class="p-3 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-3">
-                        <div id="diagSimIcon" class="w-9 h-9 rounded-xl bg-slate-800 text-slate-400 flex items-center justify-center text-sm font-bold">
-                            4
-                        </div>
-                        <div>
-                            <h3 class="text-xs font-bold text-white">Simulación Real de Fuga</h3>
-                            <p class="text-[11px] text-slate-400" id="diagSimDesc">Simular menor alejándose fuera del perímetro</p>
-                        </div>
-                    </div>
-                    <button id="simBtn" onclick="runTestSimulation()" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition">
-                        Simular Fuga
-                    </button>
-                </div>
-
-            </div>
-
-            <!-- Diagnostics Summary Box -->
-            <div id="diagSummaryBox" class="p-3.5 bg-indigo-950/40 border border-indigo-800/50 rounded-2xl mb-4 text-xs">
-                <div class="flex items-center gap-2 text-indigo-300 font-bold mb-1">
-                    <i class="fa-solid fa-list-check"></i> Estado General de Seguridad
-                </div>
-                <p class="text-[11px] text-slate-300 leading-relaxed" id="diagSummaryText">
-                    Haz clic en los botones para verificar cada subsistema antes de entrar con los menores al recinto.
-                </p>
-            </div>
-
-            <div class="flex gap-2">
-                <button onclick="runAllTestsSequentially()" class="flex-1 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-1.5">
-                    <i class="fa-solid fa-circle-play"></i>
-                    <span>Efectuar Test Completo Automático</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- SAFETY TIPS PROTOCOL MODAL -->
     <div id="safetyTipsModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-[110] flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
             <button onclick="document.getElementById('safetyTipsModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center transition">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-            <div class="w-12 h-12 bg-amber-500/20 text-amber-400 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3 border border-amber-500/30">
+            <div class="w-12 h-12 bg-indigo-500/20 text-indigo-400 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3 border border-indigo-500/30">
                 <i class="fa-solid fa-shield-cat"></i>
             </div>
             <h3 class="text-base font-extrabold text-white text-center mb-3">Protocolo Obligatorio Anti-Pérdida</h3>
@@ -447,7 +332,7 @@
             </ul>
 
             <button onclick="document.getElementById('safetyTipsModal').classList.add('hidden')" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg transition">
-                Entendido y Preparado
+                Entendido
             </button>
         </div>
     </div>
@@ -471,7 +356,7 @@
 
             <form id="joinForm" onsubmit="handleDeviceRegistration(event)" class="space-y-4 text-left">
                 <div>
-                    <label class="block text-xs font-bold text-slate-300 mb-1.5">Nombre / Apodo del Menor o Integrante:</label>
+                    <label class="block text-xs font-bold text-slate-300 mb-1.5">Nombre / Apodo del integrante:</label>
                     <input type="text" id="joinNameInput" required placeholder="Ej: Lucas, Sofía, Marta..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 font-medium">
                 </div>
 
@@ -506,7 +391,7 @@
                 </div>
                 <h3 class="text-lg font-extrabold text-white">Vincular Teléfono Integrante</h3>
                 <p class="text-xs text-slate-400 mt-1 leading-relaxed">
-                    Escanea el código QR con la cámara del móvil del menor.
+                    Escanea el código QR con la cámara del móvil a rastrear.
                 </p>
             </div>
 
@@ -567,10 +452,11 @@
                 localStorage.setItem('concert_group_id', activeGroupId);
             }
         } else {
-            localStorage.setItem('concert_group_id', activeGroupId.toUpperCase());
+            activeGroupId = activeGroupId.toUpperCase();
+            localStorage.setItem('concert_group_id', activeGroupId);
         }
 
-        let appId = urlParams.get('appId') || localStorage.getItem('concert_app_id') || 'concert-safeguard-real';
+        let appId = urlParams.get('appId') || (typeof __app_id !== 'undefined' ? __app_id : 'concert-safeguard-real');
         localStorage.setItem('concert_app_id', appId);
 
         // UI Label Injections
@@ -601,7 +487,7 @@
         let parentMarker = null;
         let radiusCircle = null;
         let parentPosition = { lat: 41.3634, lng: 2.1526 };
-        let groupMembersMap = new Map(); // Keyed by member ID
+        let groupMembersMap = new Map();
         let groupMembers = [];
         let memberMarkers = {};
         
@@ -609,32 +495,59 @@
         let alarmOscillator = null;
         let audioContext = null;
         let wakeLock = null;
-        let simulationInterval = null;
 
-        // --- STREAMING_CHUNK:Setting up MQTT real-time synchronization engine... ---
+        const MQTT_BROKERS = [
+            'wss://broker.emqx.io:8084/mqtt',
+            'wss://broker.hivemq.com:8884/mqtt',
+            'wss://test.mosquitto.org:8081/mqtt'
+        ];
+        let currentBrokerIndex = 0;
+
+        function updateCloudBadge(isConnected, message) {
+            const badge = document.getElementById('cloudStatusBadge');
+            const dot = document.getElementById('cloudStatusDot');
+            const text = document.getElementById('cloudStatusText');
+            if (badge && text && dot) {
+                if (isConnected) {
+                    badge.className = "text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1";
+                    dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-ping";
+                    text.innerText = message || "Nube Conectada";
+                } else {
+                    badge.className = "text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1";
+                    dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-ping";
+                    text.innerText = message || "Conectando...";
+                }
+            }
+        }
+
         function initMqttSync() {
+            if (mqttClient) {
+                try { mqttClient.end(true); } catch(e){}
+            }
+
+            const brokerUrl = MQTT_BROKERS[currentBrokerIndex];
+            console.log("Connecting to MQTT broker:", brokerUrl);
+            updateCloudBadge(false, "Conectando...");
+
             try {
-                // Public EMQX / HiveMQ WebSocket broker
-                const mqttUrl = 'wss://broker.emqx.io:8084/mqtt';
-                mqttClient = mqtt.connect(mqttUrl, {
-                    clientId: 'cs_' + myDeviceId + '_' + Math.random().toString(36).substring(2, 5),
-                    keepalive: 30,
-                    clean: true
+                mqttClient = mqtt.connect(brokerUrl, {
+                    clientId: 'cs_' + myDeviceId + '_' + Math.random().toString(36).substring(2, 6),
+                    keepalive: 20,
+                    clean: true,
+                    connectTimeout: 5000
                 });
 
                 mqttClient.on('connect', () => {
-                    console.log("MQTT Real-Time Broker Connected!");
-                    const topic = `concertsafeguard/v1/group_${activeGroupId}`;
-                    mqttClient.subscribe(topic);
+                    console.log("MQTT Real-Time Broker Connected to:", brokerUrl);
+                    updateCloudBadge(true, "Nube Conectada");
 
-                    const badge = document.getElementById('cloudStatusBadge');
-                    const text = document.getElementById('cloudStatusText');
-                    if (badge && text) {
-                        badge.className = "text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1";
-                        text.innerText = "Nube Conectada";
-                    }
+                    const topic = `concertsafeguard/v2/room_${activeGroupId}`;
+                    mqttClient.subscribe(topic, { qos: 0 });
 
-                    // If mobile user has a name set, publish current location immediately
+                    // Broadcast instant discovery ping requesting all room members to reply
+                    broadcastPing();
+
+                    // If mobile user has a name set, publish location immediately
                     if (myRegisteredName && currentPosCache) {
                         broadcastLocationViaMqtt(currentPosCache.lat, currentPosCache.lng);
                     }
@@ -643,7 +556,19 @@
                 mqttClient.on('message', (topic, message) => {
                     try {
                         const payload = JSON.parse(message.toString());
-                        if (payload && payload.id && payload.lat && payload.lng) {
+                        if (!payload) return;
+
+                        if (payload.type === 'ping' && payload.id !== myDeviceId) {
+                            // Another device joined or asked for updates, reply with our position
+                            if (currentPosCache) {
+                                broadcastLocationViaMqtt(currentPosCache.lat, currentPosCache.lng);
+                            } else if (!urlParams.get('joinGroup')) {
+                                broadcastLocationViaMqtt(parentPosition.lat, parentPosition.lng);
+                            }
+                            return;
+                        }
+
+                        if (payload.id && payload.lat && payload.lng) {
                             // Don't duplicate self unless testing
                             if (payload.id === myDeviceId && !urlParams.get('joinGroup')) return;
 
@@ -674,18 +599,40 @@
                     }
                 });
 
-                mqttClient.on('error', (err) => console.warn("MQTT warning:", err));
+                mqttClient.on('error', (err) => {
+                    console.warn("MQTT Broker Error, switching broker...", err);
+                    switchMqttBroker();
+                });
+
+                mqttClient.on('offline', () => {
+                    console.warn("MQTT Offline, trying fallback...");
+                    switchMqttBroker();
+                });
+
             } catch(e) {
-                console.warn("MQTT init error:", e);
+                console.warn("MQTT init exception:", e);
+                switchMqttBroker();
+            }
+        }
+
+        function switchMqttBroker() {
+            currentBrokerIndex = (currentBrokerIndex + 1) % MQTT_BROKERS.length;
+            setTimeout(initMqttSync, 2000);
+        }
+
+        function broadcastPing() {
+            if (mqttClient && mqttClient.connected) {
+                const topic = `concertsafeguard/v2/room_${activeGroupId}`;
+                mqttClient.publish(topic, JSON.stringify({ type: 'ping', id: myDeviceId }), { qos: 0 });
             }
         }
 
         function broadcastLocationViaMqtt(lat, lng, isSos = false) {
             if (mqttClient && mqttClient.connected) {
-                const topic = `concertsafeguard/v1/group_${activeGroupId}`;
+                const topic = `concertsafeguard/v2/room_${activeGroupId}`;
                 const payload = {
                     id: myDeviceId,
-                    name: myRegisteredName || 'Líder / Dispositivo',
+                    name: myRegisteredName || 'Dispositivo ' + myDeviceId.substring(4, 8),
                     lat: lat,
                     lng: lng,
                     battery: 95,
@@ -693,7 +640,7 @@
                     sos: isSos,
                     color: '#6366f1'
                 };
-                mqttClient.publish(topic, JSON.stringify(payload));
+                mqttClient.publish(topic, JSON.stringify(payload), { qos: 0 });
             }
         }
 
@@ -704,10 +651,15 @@
             checkGeofenceAlerts();
         }
 
-        // --- STREAMING_CHUNK:Initializing Firebase fallback listener... ---
         const authReadyPromise = new Promise((resolve) => {
             try {
-                const firebaseConfig = { apiKey: "demo", authDomain: "demo.firebaseapp.com", projectId: "demo" };
+                let firebaseConfig = null;
+                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                    firebaseConfig = JSON.parse(__firebase_config);
+                } else {
+                    firebaseConfig = { apiKey: "demo", authDomain: "demo.firebaseapp.com", projectId: "demo" };
+                }
+
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
@@ -732,27 +684,29 @@
 
             // Optional Firestore listener fallback
             if (db) {
-                const positionsCol = collection(db, 'artifacts', appId, 'public', 'data', `positions_${activeGroupId}`);
-                onSnapshot(positionsCol, (snapshot) => {
-                    snapshot.forEach((docSnap) => {
-                        const data = docSnap.data();
-                        if (docSnap.id === myDeviceId && !urlParams.get('joinGroup')) return;
+                try {
+                    const positionsCol = collection(db, 'artifacts', appId, 'public', 'data', `positions_${activeGroupId}`);
+                    onSnapshot(positionsCol, (snapshot) => {
+                        snapshot.forEach((docSnap) => {
+                            const data = docSnap.data();
+                            if (docSnap.id === myDeviceId && !urlParams.get('joinGroup')) return;
 
-                        if (data && data.lat && data.lng) {
-                            groupMembersMap.set(docSnap.id, {
-                                id: docSnap.id,
-                                name: data.name || 'Dispositivo ' + docSnap.id.substring(0, 4),
-                                lat: data.lat,
-                                lng: data.lng,
-                                battery: data.battery || 85,
-                                updated: data.updated || Date.now(),
-                                sos: !!data.sos,
-                                color: '#' + Math.floor(Math.abs(Math.sin(docSnap.id.charCodeAt(0)) * 16777215)).toString(16).padStart(6, '0')
-                            });
-                        }
-                    });
-                    syncRosterAndMap();
-                }, (err) => console.warn("Firestore info:", err));
+                            if (data && data.lat && data.lng) {
+                                groupMembersMap.set(docSnap.id, {
+                                    id: docSnap.id,
+                                    name: data.name || 'Dispositivo ' + docSnap.id.substring(0, 4),
+                                    lat: data.lat,
+                                    lng: data.lng,
+                                    battery: data.battery || 85,
+                                    updated: data.updated || Date.now(),
+                                    sos: !!data.sos,
+                                    color: '#' + Math.floor(Math.abs(Math.sin(docSnap.id.charCodeAt(0)) * 16777215)).toString(16).padStart(6, '0')
+                                });
+                            }
+                        });
+                        syncRosterAndMap();
+                    }, (err) => console.warn("Firestore snapshot info:", err));
+                } catch(e){}
             }
 
             // Auto-open registration modal if scanned QR join link
@@ -765,6 +719,13 @@
                     document.getElementById('mobileBannerName').innerText = myRegisteredName;
                 }
             }
+
+            // Continuous heartbeat to ensure immediate presence on mobile or PC
+            setInterval(() => {
+                if (myRegisteredName && currentPosCache) {
+                    pushLocationToServer(currentPosCache.lat, currentPosCache.lng);
+                }
+            }, 3000);
         });
 
         function showToastNotification(message) {
@@ -801,7 +762,7 @@
             // 1. Instant MQTT Broadcast
             broadcastLocationViaMqtt(lat, lng, isSos);
 
-            // 2. Firestore Sync
+            // 2. Firestore Backup
             if (db && currentUser) {
                 try {
                     const deviceDoc = doc(db, 'artifacts', appId, 'public', 'data', `positions_${activeGroupId}`, myDeviceId);
@@ -829,7 +790,6 @@
             }
         }
 
-        // --- STREAMING_CHUNK:Handling device registration and live GPS watch... ---
         window.handleDeviceRegistration = function(e) {
             e.preventDefault();
             const nameInput = document.getElementById('joinNameInput').value.trim();
@@ -878,13 +838,12 @@
                     hasResolved = true;
                     btn.disabled = false;
                     btn.innerHTML = `<i class="fa-solid fa-location-dot"></i> Reintentar Permiso GPS`;
-                    // Fallback using venue position so connection still tests successfully
                     pushLocationToServer(parentPosition.lat, parentPosition.lng);
                     document.getElementById('joinGroupModal').classList.add('hidden');
-                    showToastNotification("Transmisión activada con posición estimada.");
+                    showToastNotification("Transmisión activada con ubicación base.");
                 };
 
-                navigator.geolocation.getCurrentPosition(onPosSuccess, onPosError, { enableHighAccuracy: true, maximumAge: 3000, timeout: 4000 });
+                navigator.geolocation.getCurrentPosition(onPosSuccess, onPosError, { enableHighAccuracy: true, maximumAge: 3000, timeout: 5000 });
 
                 navigator.geolocation.watchPosition(
                     (pos) => {
@@ -894,12 +853,6 @@
                     (err) => console.warn("Watch position info:", err),
                     { enableHighAccuracy: false, maximumAge: 5000, timeout: 10000 }
                 );
-
-                setInterval(() => {
-                    if (currentPosCache) {
-                        pushLocationToServer(currentPosCache.lat, currentPosCache.lng);
-                    }
-                }, 3000);
 
             } else {
                 btn.disabled = false;
@@ -918,7 +871,7 @@
             } else {
                 await pushLocationToServer(parentPosition.lat, parentPosition.lng, true);
             }
-            alertModal("🚨 ¡Alerta SOS enviada! El teléfono líder ha sido notificado con tu posición exacta.");
+            alertModal("🚨 ¡Alerta SOS enviada! El grupo ha sido notificado con tu ubicación exacta.");
         };
 
         window.dismissSosAlert = async function() {
@@ -965,182 +918,6 @@
         window.openSafetyTipsModal = function() {
             document.getElementById('safetyTipsModal').classList.remove('hidden');
         };
-
-        window.openDiagnosticModal = function() {
-            document.getElementById('diagnosticModal').classList.remove('hidden');
-        };
-
-        window.closeDiagnosticModal = function() {
-            document.getElementById('diagnosticModal').classList.add('hidden');
-        };
-
-        window.runTestAudio = function() {
-            const icon = document.getElementById('diagAudioIcon');
-            const desc = document.getElementById('diagAudioDesc');
-            
-            icon.className = "w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center text-sm font-bold animate-bounce";
-            desc.innerText = "Sonando sirena de prueba...";
-            desc.className = "text-[11px] text-amber-400 font-bold";
-
-            playSirenSound();
-
-            setTimeout(() => {
-                stopSirenSound();
-                icon.className = "w-9 h-9 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center text-sm font-bold";
-                icon.innerHTML = '<i class="fa-solid fa-check"></i>';
-                desc.innerText = "✅ Sirena Verificada Correctamente";
-                desc.className = "text-[11px] text-emerald-400 font-bold";
-                updateDiagSummary();
-            }, 2500);
-        };
-
-        window.runTestGps = function() {
-            const icon = document.getElementById('diagGpsIcon');
-            const desc = document.getElementById('diagGpsDesc');
-
-            icon.className = "w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center text-sm font-bold animate-spin";
-            desc.innerText = "Midiendo señal de satélite GPS...";
-
-            if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition((pos) => {
-                    const acc = Math.round(pos.coords.accuracy);
-                    document.getElementById('gpsAccuracyText').innerText = `±${acc}m`;
-                    
-                    icon.className = "w-9 h-9 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center text-sm font-bold";
-                    icon.innerHTML = '<i class="fa-solid fa-check"></i>';
-                    desc.innerText = `✅ GPS Activo (Margen de error: ±${acc} metros)`;
-                    desc.className = "text-[11px] text-emerald-400 font-bold";
-                    updateDiagSummary();
-                }, (err) => {
-                    icon.className = "w-9 h-9 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center text-sm font-bold";
-                    icon.innerHTML = '<i class="fa-solid fa-check"></i>';
-                    desc.innerText = "✅ GPS Listo (Modo Precisión Normal)";
-                    desc.className = "text-[11px] text-emerald-400 font-bold";
-                    updateDiagSummary();
-                }, { enableHighAccuracy: true, timeout: 4000 });
-            } else {
-                icon.className = "w-9 h-9 rounded-xl bg-rose-600 text-white flex items-center justify-center text-sm font-bold";
-                desc.innerText = "❌ Dispositivo no soporta GPS";
-            }
-        };
-
-        window.runTestSync = async function() {
-            const icon = document.getElementById('diagSyncIcon');
-            const desc = document.getElementById('diagSyncDesc');
-
-            icon.className = "w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center text-sm font-bold animate-pulse";
-            desc.innerText = "Enviando paquete de prueba por MQTT y Nube...";
-
-            const startT = Date.now();
-            await pushLocationToServer(parentPosition.lat, parentPosition.lng);
-            const latency = Date.now() - startT;
-
-            icon.className = "w-9 h-9 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center text-sm font-bold";
-            icon.innerHTML = '<i class="fa-solid fa-check"></i>';
-            desc.innerText = `✅ Sincronización MQTT en Vivo OK (${latency} ms)`;
-            desc.className = "text-[11px] text-emerald-400 font-bold";
-            updateDiagSummary();
-        };
-
-        window.runTestSimulation = function() {
-            const icon = document.getElementById('diagSimIcon');
-            const desc = document.getElementById('diagSimDesc');
-            const btn = document.getElementById('simBtn');
-
-            if (simulationInterval) {
-                clearInterval(simulationInterval);
-                simulationInterval = null;
-                btn.innerText = "Simular Fuga";
-                btn.className = "px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition";
-                
-                groupMembersMap.delete('sim_test_minor');
-                if (memberMarkers['sim_test_minor']) {
-                    map.removeLayer(memberMarkers['sim_test_minor']);
-                    delete memberMarkers['sim_test_minor'];
-                }
-                syncRosterAndMap();
-                desc.innerText = "Simulación deteniéndose...";
-                return;
-            }
-
-            btn.innerText = "Detener Test";
-            btn.className = "px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs transition";
-
-            icon.className = "w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center text-sm font-bold animate-ping";
-            desc.innerText = "🚨 Simulando menor alejándose fuera del perímetro...";
-            desc.className = "text-[11px] text-amber-400 font-bold";
-
-            let step = 0;
-            const startLat = parentPosition.lat;
-            const startLng = parentPosition.lng;
-
-            simulationInterval = setInterval(() => {
-                step++;
-                const offsetLat = (step * 0.00015);
-                const offsetLng = (step * 0.00015);
-
-                groupMembersMap.set('sim_test_minor', {
-                    id: 'sim_test_minor',
-                    name: 'Menor (TEST PRUEBA)',
-                    lat: startLat + offsetLat,
-                    lng: startLng + offsetLng,
-                    battery: 92,
-                    updated: Date.now(),
-                    sos: step >= 5,
-                    color: '#f59e0b'
-                });
-
-                syncRosterAndMap();
-
-                if (step >= 8) {
-                    clearInterval(simulationInterval);
-                    simulationInterval = null;
-                    btn.innerText = "Reiniciar Simulación";
-                    btn.className = "px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition";
-                    
-                    icon.className = "w-9 h-9 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center text-sm font-bold";
-                    icon.innerHTML = '<i class="fa-solid fa-check"></i>';
-                    desc.innerText = "✅ Test de Alarma Completo Funcional. ¡Sirena y Alerta Probadas!";
-                    desc.className = "text-[11px] text-emerald-400 font-bold";
-                    updateDiagSummary();
-                }
-            }, 1000);
-        };
-
-        window.addSimulatedMinor = function() {
-            const simId = 'sim_' + Math.random().toString(36).substring(2, 6);
-            const offsetLat = (Math.random() - 0.5) * 0.0008;
-            const offsetLng = (Math.random() - 0.5) * 0.0008;
-
-            groupMembersMap.set(simId, {
-                id: simId,
-                name: 'Menor Virtual ' + simId.substring(4, 7).toUpperCase(),
-                lat: parentPosition.lat + offsetLat,
-                lng: parentPosition.lng + offsetLng,
-                battery: 88,
-                updated: Date.now(),
-                sos: false,
-                color: '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')
-            });
-
-            syncRosterAndMap();
-            showToastNotification("Menor de prueba añadido al grupo");
-        };
-
-        window.runAllTestsSequentially = function() {
-            runTestAudio();
-            setTimeout(() => runTestGps(), 2600);
-            setTimeout(() => runTestSync(), 5000);
-            setTimeout(() => runTestSimulation(), 7500);
-        };
-
-        function updateDiagSummary() {
-            const summary = document.getElementById('diagSummaryText');
-            summary.innerHTML = `
-                <span class="text-emerald-400 font-extrabold">¡SISTEMA VERIFICADO AL 100%!</span><br>
-                El GPS, los altavoces de alarma y la sincronización en vivo funcionan correctamente. Puedes entrar al concierto con total seguridad.
-            `;
-        }
 
         window.removeMember = function(memberId, name) {
             groupMembersMap.delete(memberId);
@@ -1356,13 +1133,10 @@
                             <i class="fa-solid fa-mobile-screen-button text-2xl"></i>
                         </div>
                         <p class="text-xs text-slate-300 font-bold mb-1">Esperando señal de móviles en sala ${activeGroupId}</p>
-                        <p class="text-[11px] text-slate-500 mb-4 leading-relaxed">Abre la cámara del otro teléfono y escanea el QR, o pulsa abajo para probar con un integrante simulado.</p>
+                        <p class="text-[11px] text-slate-500 mb-4 leading-relaxed">Abre la cámara del otro teléfono y escanea el QR para vincularlo.</p>
                         <div class="flex gap-2 justify-center">
-                            <button onclick="openScanToLocateModal()" class="px-3 py-2 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-xs text-indigo-300 font-bold transition">
-                                <i class="fa-solid fa-qrcode mr-1"></i> QR
-                            </button>
-                            <button onclick="addSimulatedMinor()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 text-xs font-bold transition">
-                                <i class="fa-solid fa-plus mr-1"></i> + Probar Móvil
+                            <button onclick="openScanToLocateModal()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-bold transition shadow-lg shadow-indigo-600/30">
+                                <i class="fa-solid fa-qrcode mr-1"></i> Ver Código QR
                             </button>
                         </div>
                     </div>
@@ -1529,7 +1303,7 @@
             const codeInput = document.getElementById('groupCodeInput');
             codeInput.select();
             document.execCommand('copy');
-            alertModal(`✅ Enlace copiado. El código de grupo es ${activeGroupId}. Envíaselo por WhatsApp.`);
+            alertModal(`✅ Enlace copiado. Código de sala: ${activeGroupId}. Envíaselo por mensaje.`);
         };
 
         function alertModal(msg) {
