@@ -497,30 +497,45 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
 
+                const resolveAuth = () => {
+                    if (authPromiseResolve) {
+                        authPromiseResolve();
+                        authPromiseResolve = null;
+                    }
+                };
+
                 const customToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
                 if (customToken) {
                     signInWithCustomToken(auth, customToken).then((res) => {
                         currentUser = res.user;
-                        if (authPromiseResolve) authPromiseResolve();
+                        resolveAuth();
                         subscribeFirestoreSync();
                     }).catch(() => {
                         signInAnonymously(auth).then(res => {
                             currentUser = res.user;
-                            if (authPromiseResolve) authPromiseResolve();
+                            resolveAuth();
                             subscribeFirestoreSync();
-                        });
+                        }).catch(() => resolveAuth());
                     });
                 } else {
                     signInAnonymously(auth).then(res => {
                         currentUser = res.user;
-                        if (authPromiseResolve) authPromiseResolve();
+                        resolveAuth();
                         subscribeFirestoreSync();
-                    });
+                    }).catch(() => resolveAuth());
                 }
             } catch (err) {
                 console.warn("Firebase initialized in local mode:", err);
                 if (authPromiseResolve) authPromiseResolve();
             }
+
+            // Safety net: Guarantee authReadyPromise resolves within 3 seconds
+            setTimeout(() => {
+                if (authPromiseResolve) {
+                    authPromiseResolve();
+                    authPromiseResolve = null;
+                }
+            }, 3000);
         }
 
         function subscribeFirestoreSync() {
@@ -590,17 +605,22 @@
             return colors[Math.abs(hash) % colors.length];
         }
 
+        async function getBatteryLevel() {
+            if (!navigator.getBattery) return 85;
+            try {
+                const batteryPromise = navigator.getBattery().then(b => Math.round(b.level * 100));
+                const timeoutPromise = new Promise(res => setTimeout(() => res(85), 300));
+                return await Promise.race([batteryPromise, timeoutPromise]);
+            } catch (e) {
+                return 85;
+            }
+        }
+
         async function pushLocationToServer(lat, lng) {
             await authReadyPromise;
             currentPosCache = { lat, lng };
 
-            let batteryLevel = 90;
-            if (navigator.getBattery) {
-                try {
-                    const b = await navigator.getBattery();
-                    batteryLevel = Math.round(b.level * 100);
-                } catch(err){}
-            }
+            const batteryLevel = await getBatteryLevel();
 
             if (db && currentUser) {
                 try {
@@ -646,22 +666,41 @@
             startSilentAudioKeepAlive();
 
             if ("geolocation" in navigator) {
-                navigator.geolocation.watchPosition(
-                    async (pos) => {
-                        const lat = pos.coords.latitude;
-                        const lng = pos.coords.longitude;
-                        await pushLocationToServer(lat, lng);
-                        btn.innerHTML = `<i class="fa-solid fa-check text-emerald-400 mr-1"></i> Transmitiendo GPS en vivo`;
-                    },
-                    (err) => {
-                        btn.disabled = false;
-                        btn.innerHTML = `<i class="fa-solid fa-location-dot"></i> Reintentar Permiso GPS`;
-                        alertModal("❌ Se requiere conceder el permiso de ubicación GPS para incorporarte al mapa.");
-                    },
-                    { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 }
+                const onPosSuccess = async (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    await pushLocationToServer(lat, lng);
+                    btn.innerHTML = `<i class="fa-solid fa-check text-emerald-400 mr-1"></i> Transmitiendo GPS en vivo`;
+                };
+
+                const onPosError = (err) => {
+                    console.warn("High-accuracy GPS timeout/error, trying standard location:", err);
+                    navigator.geolocation.getCurrentPosition(
+                        onPosSuccess,
+                        (e2) => {
+                            btn.disabled = false;
+                            btn.innerHTML = `<i class="fa-solid fa-location-dot"></i> Reintentar Permiso GPS`;
+                            alertModal("❌ No se pudo obtener la ubicación GPS. Verifica que tengas activada la Ubicación/GPS en el móvil y le des permiso al navegador.");
+                        },
+                        { enableHighAccuracy: false, maximumAge: 10000, timeout: 10000 }
+                    );
+                };
+
+                // Request initial location immediately
+                navigator.geolocation.getCurrentPosition(
+                    onPosSuccess,
+                    onPosError,
+                    { enableHighAccuracy: true, maximumAge: 5000, timeout: 8000 }
                 );
 
-                // Continuous Heartbeat Interval every 8 seconds
+                // Continuous watch position
+                navigator.geolocation.watchPosition(
+                    onPosSuccess,
+                    (err) => console.warn("Watch position notice:", err),
+                    { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 }
+                );
+
+                // Heartbeat interval every 8s
                 setInterval(() => {
                     if (currentPosCache) {
                         pushLocationToServer(currentPosCache.lat, currentPosCache.lng);
@@ -694,7 +733,6 @@
             joinUrl.searchParams.set('joinGroup', '1');
             joinUrl.searchParams.set('groupId', appId);
 
-            // Safely embed encoded firebaseConfig into URL parameter for full cross-device synchronization
             if (firebaseConfig && firebaseConfig.apiKey !== 'demo') {
                 try {
                     const encodedCfg = btoa(encodeURIComponent(JSON.stringify(firebaseConfig)));
