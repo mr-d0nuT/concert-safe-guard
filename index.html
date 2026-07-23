@@ -490,6 +490,7 @@
         let groupMembersMap = new Map();
         let groupMembers = [];
         let memberMarkers = {};
+        let removedMemberIds = new Set();
         
         let isAudioAlarmEnabled = true;
         let alarmOscillator = null;
@@ -558,6 +559,34 @@
                         const payload = JSON.parse(message.toString());
                         if (!payload) return;
 
+                        // Procesar orden de expulsión/desvinculación de un teléfono
+                        if (payload.type === 'kick') {
+                            if (payload.targetId) {
+                                removedMemberIds.add(payload.targetId);
+                                groupMembersMap.delete(payload.targetId);
+                                if (memberMarkers[payload.targetId]) {
+                                    map.removeLayer(memberMarkers[payload.targetId]);
+                                    delete memberMarkers[payload.targetId];
+                                }
+                                syncRosterAndMap();
+
+                                if (payload.targetId === myDeviceId) {
+                                    myRegisteredName = '';
+                                    localStorage.removeItem('concert_my_name');
+                                    document.getElementById('mobileActiveBanner').classList.add('hidden');
+                                    showToastNotification("Has sido desvinculado del grupo por el administrador.");
+                                }
+                            }
+                            return;
+                        }
+
+                        // Procesar orden de nueva vinculación
+                        if (payload.type === 'join') {
+                            if (payload.id) {
+                                removedMemberIds.delete(payload.id);
+                            }
+                        }
+
                         if (payload.type === 'ping' && payload.id !== myDeviceId) {
                             // Another device joined or asked for updates, reply with our position
                             if (currentPosCache) {
@@ -569,6 +598,9 @@
                         }
 
                         if (payload.id && payload.lat && payload.lng) {
+                            // Ignorar transmisiones GPS de móviles desvinculados
+                            if (removedMemberIds.has(payload.id)) return;
+
                             // Don't duplicate self unless testing
                             if (payload.id === myDeviceId && !urlParams.get('joinGroup')) return;
 
@@ -689,6 +721,7 @@
                     onSnapshot(positionsCol, (snapshot) => {
                         snapshot.forEach((docSnap) => {
                             const data = docSnap.data();
+                            if (removedMemberIds.has(docSnap.id)) return;
                             if (docSnap.id === myDeviceId && !urlParams.get('joinGroup')) return;
 
                             if (data && data.lat && data.lng) {
@@ -797,6 +830,15 @@
 
             myRegisteredName = nameInput;
             localStorage.setItem('concert_my_name', nameInput);
+
+            // Si se vuelve a registrar, retirarlo de la lista de desvinculados
+            removedMemberIds.delete(myDeviceId);
+
+            // Transmitir orden de unirse por MQTT
+            if (mqttClient && mqttClient.connected) {
+                const topic = `concertsafeguard/v2/room_${activeGroupId}`;
+                mqttClient.publish(topic, JSON.stringify({ type: 'join', id: myDeviceId, name: nameInput }), { qos: 0 });
+            }
 
             document.getElementById('mobileActiveBanner').classList.remove('hidden');
             document.getElementById('mobileBannerName').innerText = myRegisteredName;
@@ -920,19 +962,32 @@
         };
 
         window.removeMember = function(memberId, name) {
+            // 1. Añadir el dispositivo a la lista de ignorados
+            removedMemberIds.add(memberId);
+
+            // 2. Eliminar del mapa y del modelo de datos
             groupMembersMap.delete(memberId);
             if (memberMarkers[memberId]) {
                 map.removeLayer(memberMarkers[memberId]);
                 delete memberMarkers[memberId];
             }
+
+            // 3. Emitir mensaje de desvinculación a toda la sala
+            if (mqttClient && mqttClient.connected) {
+                const topic = `concertsafeguard/v2/room_${activeGroupId}`;
+                mqttClient.publish(topic, JSON.stringify({ type: 'kick', targetId: memberId, id: myDeviceId }), { qos: 0 });
+            }
+
+            // 4. Eliminar el registro en la base de datos Firestore
             if (db && currentUser) {
                 try {
                     const memberDoc = doc(db, 'artifacts', appId, 'public', 'data', `positions_${activeGroupId}`, memberId);
                     deleteDoc(memberDoc).catch(()=>{});
                 } catch(e){}
             }
+
             syncRosterAndMap();
-            showToastNotification(`Desvinculado: ${name}`);
+            showToastNotification(`Móvil desvinculado: ${name}`);
         };
 
         function initLeafletMap() {
