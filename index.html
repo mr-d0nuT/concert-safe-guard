@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="es" class="dark h-full bg-slate-950">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConcertSafe Guard - Localizador de Grupo en Concierto</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- QRCode.js Library for dynamic QR generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        .leaflet-container {
+            background-color: #0f172a !important;
+            font-family: inherit;
+        }
+        .pulse-marker {
+            box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
+            animation: pulse-ring 1.8s infinite cubic-bezier(0.66, 0, 0, 1);
+        }
+        .pulse-marker-danger {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.9);
+            animation: pulse-ring-danger 1s infinite cubic-bezier(0.66, 0, 0, 1);
+        }
+        @keyframes pulse-ring {
+            to { box-shadow: 0 0 0 18px rgba(99, 102, 241, 0); }
+        }
+        @keyframes pulse-ring-danger {
+            to { box-shadow: 0 0 0 25px rgba(239, 68, 68, 0); }
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    </style>
+</head>
+<body class="h-full font-sans text-slate-100 bg-slate-950 flex flex-col overflow-x-hidden">
+
+    <!-- TOP HEADER -->
+    <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-50 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-pink-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid font-bold fa-radar text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight tracking-wide text-white flex items-center gap-2">
+                        ConcertSafe Guard
+                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                            <i class="fa-solid fa-signal text-[10px] mr-1"></i>En Vivo
+                        </span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Supervisión del grupo en el recinto</p>
+                </div>
+            </div>
+
+            <!-- Header Action Controls -->
+            <div class="flex items-center gap-2">
+                <button id="alarmToggleBtn" onclick="toggleAudioAlarm()" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium flex items-center gap-2 transition">
+                    <i id="alarmIcon" class="fa-solid fa-bell text-amber-400"></i>
+                    <span id="alarmBtnText" class="hidden sm:inline">Alarma Activada</span>
+                </button>
+
+                <button onclick="openScanToLocateModal()" class="px-3.5 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition transform active:scale-95">
+                    <i class="fa-solid fa-qrcode text-sm"></i>
+                    <span>Escanea para Localizarme</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ACTIVE ALERT BANNER (Hidden by default) -->
+    <div id="perimeterAlertBanner" class="hidden bg-rose-600 text-white px-4 py-3 shadow-lg border-b border-rose-700 animate-bounce">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-triangle-exclamation text-2xl text-amber-300"></i>
+                <div>
+                    <p class="font-bold text-sm sm:text-base" id="alertBannerTitle">¡ALERTA DE PERÍMETRO!</p>
+                    <p class="text-xs sm:text-sm text-rose-100" id="alertBannerDetail">Un miembro ha sobrepasado el radio seguro configurado.</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="silenceAlarm()" class="px-3 py-1.5 rounded bg-white text-rose-700 text-xs font-bold hover:bg-rose-50 transition">
+                    <i class="fa-solid fa-volume-xmark mr-1"></i> Silenciar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+        <!-- LEFT COLUMN: MAP & CONTROLS (8 Cols) -->
+        <section class="lg:col-span-8 flex flex-col gap-4">
+
+            <!-- Venue & Geofence Control Bar -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+                    
+                    <!-- Venue Selector -->
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Recinto del Concierto</label>
+                        <select id="venueSelect" onchange="changeVenue()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                            <option value="santjordi">Palau Sant Jordi (Barcelona)</option>
+                            <option value="wizink">WiZink Center (Madrid)</option>
+                            <option value="bernabeu">Estadio Santiago Bernabéu (Madrid)</option>
+                            <option value="olympic">Estadi Olímpic Lluís Companys</option>
+                            <option value="custom">GPS Actual (Mi Ubicación)</option>
+                        </select>
+                    </div>
+
+                    <!-- Distance Slider -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-medium text-slate-400">Radio Seguro (Geofence)</label>
+                            <span id="radiusDisplay" class="text-xs font-bold text-indigo-400">50 metros</span>
+                        </div>
+                        <input type="range" id="radiusRange" min="10" max="300" step="5" value="50" oninput="updateGeofenceRadius(this.value)" class="w-full accent-indigo-500 bg-slate-950 h-2 rounded-lg cursor-pointer">
+                    </div>
+
+                    <!-- Tracking Mode Buttons -->
+                    <div class="flex items-center gap-2">
+                        <button onclick="centerOnParent()" class="flex-1 py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs rounded-xl font-medium flex items-center justify-center gap-2 transition">
+                            <i class="fa-solid fa-crosshairs text-indigo-400"></i> Mi Posición
+                        </button>
+                        <button id="simModeBtn" onclick="toggleSimulation()" class="flex-1 py-2 px-3 bg-indigo-900/40 hover:bg-indigo-900/60 border border-indigo-700/50 text-indigo-300 text-xs rounded-xl font-medium flex items-center justify-center gap-2 transition">
+                            <i class="fa-solid fa-vial"></i> <span id="simBtnText">Simulación: ON</span>
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Interactive Map Box -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-2 shadow-xl flex-1 min-h-[420px] relative overflow-hidden flex flex-col">
+                
+                <!-- Map Container -->
+                <div id="map" class="w-full h-full min-h-[400px] rounded-xl z-0"></div>
+
+                <!-- Overlay Map Controls & Badges -->
+                <div class="absolute top-4 left-4 z-10 flex flex-wrap gap-2 pointer-events-none">
+                    <span class="bg-slate-950/80 backdrop-blur border border-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping"></span>
+                        <i class="fa-solid fa-user-shield text-indigo-400"></i> Tu Posición (Padre/Madre)
+                    </span>
+                    <span class="bg-slate-950/80 backdrop-blur border border-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                        <span id="insideCountBadge">7/7 Dentro del radio</span>
+                    </span>
+                </div>
+
+                <!-- Quick Action Floating Bar inside map -->
+                <div class="absolute bottom-4 right-4 z-10 flex gap-2">
+                    <button onclick="triggerTestBreach()" title="Simular que una amiga se aleja" class="bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-amber-400 text-xs px-3 py-2 rounded-xl shadow-xl flex items-center gap-2 transition">
+                        <i class="fa-solid fa-person-walking-arrow-right"></i>
+                        <span>Probar Alerta Escort</span>
+                    </button>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- RIGHT COLUMN: GROUP ROSTER & STATUS (4 Cols) -->
+        <section class="lg:col-span-4 flex flex-col gap-4">
+
+            <!-- Roster Header Card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="font-bold text-slate-100 text-base flex items-center gap-2">
+                        <i class="fa-solid fa-users text-indigo-400"></i>
+                        Dispositivos en Seguimiento (<span id="membersCountText">7</span>)
+                    </h2>
+                    <span class="text-xs bg-slate-800 text-slate-300 px-2 py-1 rounded-md border border-slate-700" id="syncStatus">
+                        <i class="fa-solid fa-rotate text-indigo-400 animate-spin mr-1"></i>En Vivo
+                    </span>
+                </div>
+                <p class="text-xs text-slate-400">
+                    Dispositivos autorizados emitiendo posición GPS en el recinto. Puedes eliminar personas individualmente en cualquier momento.
+                </p>
+                <button onclick="openScanToLocateModal()" class="w-full mt-3 py-2 px-3 bg-indigo-950/60 hover:bg-indigo-900/80 border border-indigo-700/50 text-indigo-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-user-plus text-indigo-400"></i> Añadir nuevo teléfono con QR
+                </button>
+            </div>
+
+            <!-- Members List Scrollable Container -->
+            <div id="membersContainer" class="flex flex-col gap-3 overflow-y-auto max-h-[580px] pr-1">
+                <!-- Dynamic cards injected via Javascript -->
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- JOIN REQUEST MODAL (Shown automatically if URL contains ?joinGroup=1 or via button) -->
+    <div id="joinGroupModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[80] flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-indigo-500/40 rounded-3xl max-w-md w-full p-6 shadow-2xl relative text-center">
+            <div class="w-16 h-16 bg-gradient-to-tr from-indigo-600 to-pink-500 rounded-2xl flex items-center justify-center text-white text-3xl mx-auto mb-4 shadow-xl shadow-indigo-500/30">
+                <i class="fa-solid fa-location-crosshairs"></i>
+            </div>
+            <h2 class="text-xl font-bold text-white mb-1">Unirse al Perímetro de Seguridad</h2>
+            <p class="text-xs text-slate-300 mb-6">
+                Estás a punto de compartir tu ubicación GPS con el responsable del grupo para estar localizada durante el concierto.
+            </p>
+
+            <form id="joinForm" onsubmit="handleDeviceRegistration(event)" class="space-y-4 text-left">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tu Nombre o Apodo:</label>
+                    <input type="text" id="joinNameInput" required placeholder="Ej: Sofía, Lucía..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <div class="p-3 bg-indigo-950/50 border border-indigo-800/40 rounded-xl flex items-start gap-3 text-xs text-indigo-200">
+                    <i class="fa-solid fa-shield-halved text-base text-indigo-400 mt-0.5"></i>
+                    <div>
+                        <strong>Permisos requeridos:</strong>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Al pulsar el botón se te solicitará permiso de ubicación GPS del navegador para enviarla en tiempo real.</p>
+                    </div>
+                </div>
+
+                <button type="submit" id="grantPermissionBtn" class="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-location-dot"></i>
+                    <span>Autorizar y Unirme al Grupo</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- SHARE & AUTHORIZATION MODAL WITH DYNAMIC QR CODE -->
+    <div id="shareModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="closeShareModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="text-center mb-5">
+                <div class="w-12 h-12 bg-indigo-600/20 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-indigo-500/30">
+                    <i class="fa-solid fa-qrcode text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white">Escanea para Localizarme</h3>
+                <p class="text-xs text-slate-400 mt-1">
+                    Enfoca este código QR con la cámara del teléfono de tu hija o amigas. Al abrirlo y aceptar, se sumarán al grupo automáticamente.
+                </p>
+            </div>
+
+            <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800 mb-4 flex flex-col items-center gap-3">
+                <!-- Dynamic QR Code Container -->
+                <div id="qrcode" class="bg-white p-3 rounded-2xl shadow-lg min-w-[160px] min-h-[160px] flex items-center justify-center"></div>
+                <p class="text-xs text-indigo-300 font-medium">
+                    <i class="fa-solid fa-camera mr-1"></i> Escanea con la cámara de cualquier móvil
+                </p>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs font-medium text-slate-400 mb-1 block">Enlace directo de unión</label>
+                    <div class="flex items-center gap-2">
+                        <input id="groupCodeInput" readonly value="" class="bg-slate-950 border border-slate-800 text-indigo-400 font-mono text-xs text-center rounded-xl p-2.5 flex-1 select-all">
+                        <button onclick="copyGroupLink()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs px-4 py-2.5 rounded-xl transition">
+                            <i class="fa-solid fa-copy mr-1"></i> Copiar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-start gap-2 text-xs text-emerald-300">
+                    <i class="fa-solid fa-circle-check text-sm mt-0.5"></i>
+                    <span><strong>Sin instalar aplicaciones:</strong> Funciona directamente en el navegador de cualquier smartphone (iOS/Android).</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'concert-tracker-app';
+        let firebaseConfig = { apiKey: "demo", authDomain: "demo.firebaseapp.com", projectId: "demo" };
+        if (typeof __firebase_config !== 'undefined') {
+            try { firebaseConfig = JSON.parse(__firebase_config); } catch (e) { console.error("Firebase config parse error", e); }
+        }
+
+        let app, db, auth;
+        let currentUser = null;
+        let myDeviceId = localStorage.getItem('concert_device_id') || ('dev_' + Math.random().toString(36).substring(2, 9));
+        localStorage.setItem('concert_device_id', myDeviceId);
+
+        // Venue coordinates database
+        const VENUES = {
+            santjordi: { name: 'Palau Sant Jordi', lat: 41.3634, lng: 2.1526, zoom: 18 },
+            wizink: { name: 'WiZink Center', lat: 40.4239, lng: -3.6713, zoom: 18 },
+            bernabeu: { name: 'Estadio Santiago Bernabéu', lat: 40.4530, lng: -3.6883, zoom: 18 },
+            olympic: { name: 'Estadi Olímpic', lat: 41.3647, lng: 2.1556, zoom: 18 }
+        };
+
+        // App state
+        let currentVenueKey = 'santjordi';
+        let safeRadiusMeters = 50; // default geofence radius
+        let isAudioAlarmEnabled = true;
+        let isSimulationRunning = true;
+        let activeAlarmTriggered = false;
+        let audioContext = null;
+        let alarmOscillator = null;
+        let qrCodeInstance = null;
+
+        // Parent location
+        let parentPosition = { ...VENUES.santjordi };
+
+        // Group members list (Daughter + 6 friends initial preset)
+        let groupMembers = [
+            { id: 'm1', name: 'Laura (Hija)', isDaughter: true, lat: 41.3633, lng: 2.1527, battery: 88, authorized: true, signal: 'GPS + WiFi', color: '#ec4899' },
+            { id: 'm2', name: 'Sofía', isDaughter: false, lat: 41.3635, lng: 2.1524, battery: 94, authorized: true, signal: 'GPS + BLE', color: '#3b82f6' },
+            { id: 'm3', name: 'Lucía', isDaughter: false, lat: 41.3632, lng: 2.1529, battery: 76, authorized: true, signal: 'GPS', color: '#10b981' },
+            { id: 'm4', name: 'Elena', isDaughter: false, lat: 41.3636, lng: 2.1528, battery: 61, authorized: true, signal: 'WiFi', color: '#f59e0b' },
+            { id: 'm5', name: 'Marta', isDaughter: false, lat: 41.3631, lng: 2.1523, battery: 82, authorized: true, signal: 'GPS + BLE', color: '#8b5cf6' },
+            { id: 'm6', name: 'Paula', isDaughter: false, lat: 41.3634, lng: 2.1531, battery: 45, authorized: true, signal: 'GPS', color: '#06b6d4' },
+            { id: 'm7', name: 'Carmen', isDaughter: false, lat: 41.3637, lng: 2.1522, battery: 90, authorized: true, signal: 'GPS + WiFi', color: '#14b8a6' }
+        ];
+
+        let map, parentMarker, radiusCircle;
+        let memberMarkers = {};
+
+        window.onload = function() {
+            initFirebase();
+            initLeafletMap();
+            initGeoLocation();
+            checkUrlForJoinGroup();
+            renderRoster();
+            startSimulationLoop();
+        };
+
+        function checkUrlForJoinGroup() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('joinGroup') === '1') {
+                document.getElementById('joinGroupModal').classList.remove('hidden');
+            }
+        }
+
+        function initFirebase() {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                const customToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                if (customToken) {
+                    signInWithCustomToken(auth, customToken).then((res) => {
+                        currentUser = res.user;
+                        subscribeFirestoreSync();
+                    }).catch(() => {
+                        signInAnonymously(auth).then(res => {
+                            currentUser = res.user;
+                            subscribeFirestoreSync();
+                        });
+                    });
+                } else {
+                    signInAnonymously(auth).then(res => {
+                        currentUser = res.user;
+                        subscribeFirestoreSync();
+                    });
+                }
+            } catch (err) {
+                console.warn("Firebase running in offline/standalone mode:", err);
+            }
+        }
+
+        function subscribeFirestoreSync() {
+            if (!db || !currentUser) return;
+            try {
+                const groupCol = collection(db, 'artifacts', appId, 'public', 'data', 'group_positions');
+                onSnapshot(groupCol, (snapshot) => {
+                    let remoteIds = new Set();
+                    snapshot.forEach(docSnap => {
+                        const data = docSnap.data();
+                        remoteIds.add(docSnap.id);
+                        const idx = groupMembers.findIndex(m => m.id === docSnap.id);
+                        if (idx !== -1) {
+                            groupMembers[idx].lat = data.lat;
+                            groupMembers[idx].lng = data.lng;
+                            if (data.name) groupMembers[idx].name = data.name;
+                            if (data.battery) groupMembers[idx].battery = data.battery;
+                        } else {
+                            // New device joined remotely!
+                            groupMembers.push({
+                                id: docSnap.id,
+                                name: data.name || 'Dispositivo Nuevo',
+                                isDaughter: false,
+                                lat: data.lat,
+                                lng: data.lng,
+                                battery: data.battery || 95,
+                                authorized: true,
+                                signal: 'GPS Vivo',
+                                color: '#' + Math.floor(Math.random()*16777215).toString(16)
+                            });
+                        }
+                    });
+
+                    updateMapMarkers();
+                    checkGeofenceAlerts();
+                    renderRoster();
+                }, (error) => {
+                    console.log("Firestore snapshot error:", error);
+                });
+            } catch(e) {
+                console.log("Sync notice:", e);
+            }
+        }
+
+        // Handle active GPS streaming when joining from another phone
+        window.handleDeviceRegistration = function(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('joinNameInput').value.trim();
+            if (!nameInput) return;
+
+            const btn = document.getElementById('grantPermissionBtn');
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Solicitando GPS...`;
+            btn.disabled = true;
+
+            if ("geolocation" in navigator) {
+                navigator.geolocation.watchPosition(
+                    (pos) => {
+                        const lat = pos.coords.latitude;
+                        const lng = pos.coords.longitude;
+                        
+                        // Get battery if available
+                        let batteryLevel = 90;
+                        if (navigator.getBattery) {
+                            navigator.getBattery().then(b => { batteryLevel = Math.round(b.level * 100); });
+                        }
+
+                        // Send live location to Firestore group
+                        if (db && currentUser) {
+                            const deviceDoc = doc(db, 'artifacts', appId, 'public', 'data', 'group_positions', myDeviceId);
+                            setDoc(deviceDoc, {
+                                name: nameInput,
+                                lat: lat,
+                                lng: lng,
+                                battery: batteryLevel,
+                                updated: Date.now()
+                            }, { merge: true });
+                        }
+
+                        document.getElementById('joinGroupModal').classList.add('hidden');
+                        alertModal(`✅ ¡Te has unida con éxito al grupo como "${nameInput}"! Tu teléfono está enviando ubicación GPS en directo.`);
+                    },
+                    (err) => {
+                        btn.disabled = false;
+                        btn.innerHTML = `<i class="fa-solid fa-location-dot"></i> Reintentar Permiso GPS`;
+                        alertModal("❌ Se requiere permiso de ubicación GPS para incorporarse al grupo.");
+                    },
+                    { enableHighAccuracy: true }
+                );
+            } else {
+                alertModal("El navegador de este teléfono no soporta geolocalización GPS.");
+            }
+        };
+
+        window.openScanToLocateModal = function() {
+            const modal = document.getElementById('shareModal');
+            modal.classList.remove('hidden');
+
+            // Generate clean Join URL
+            const joinUrl = new URL(window.location.href);
+            joinUrl.searchParams.set('joinGroup', '1');
+            document.getElementById('groupCodeInput').value = joinUrl.href;
+
+            // Render dynamic QR Code
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = '';
+            try {
+                new QRCode(qrContainer, {
+                    text: joinUrl.href,
+                    width: 160,
+                    height: 160,
+                    colorDark: "#0f172a",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            } catch(e) {
+                console.error("QR creation failed:", e);
+            }
+        };
+
+        window.removeMember = function(memberId, name) {
+            // Modal confirmation
+            const confirmBox = document.createElement('div');
+            confirmBox.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[110] flex items-center justify-center p-4";
+            confirmBox.innerHTML = `
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl max-w-sm w-full text-center shadow-2xl">
+                    <div class="w-12 h-12 bg-rose-500/20 text-rose-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="fa-solid fa-user-minus text-xl"></i>
+                    </div>
+                    <h4 class="font-bold text-white text-base mb-1">¿Eliminar a ${name}?</h4>
+                    <p class="text-xs text-slate-400 mb-5">Dejará de aparecer en el mapa y ya no hará sonar la alarma si se aleja del perímetro.</p>
+                    <div class="flex gap-2">
+                        <button id="cancelRemoveBtn" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl transition">Cancelar</button>
+                        <button id="confirmRemoveBtn" class="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl transition">Eliminar</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(confirmBox);
+
+            document.getElementById('cancelRemoveBtn').onclick = () => confirmBox.remove();
+            document.getElementById('confirmRemoveBtn').onclick = async () => {
+                confirmBox.remove();
+
+                // Remove from local array
+                groupMembers = groupMembers.filter(m => m.id !== memberId);
+
+                // Remove marker from map
+                if (memberMarkers[memberId]) {
+                    map.removeLayer(memberMarkers[memberId]);
+                    delete memberMarkers[memberId];
+                }
+
+                // Remove from Firestore if exists
+                if (db && currentUser) {
+                    try {
+                        const memberDoc = doc(db, 'artifacts', appId, 'public', 'data', 'group_positions', memberId);
+                        await deleteDoc(memberDoc);
+                    } catch(e) {
+                        console.log("Firestore delete doc note:", e);
+                    }
+                }
+
+                checkGeofenceAlerts();
+                renderRoster();
+            };
+        };
+
+        function initLeafletMap() {
+            const initialVenue = VENUES[currentVenueKey];
+            map = L.map('map', {
+                zoomControl: false
+            }).setView([initialVenue.lat, initialVenue.lng], initialVenue.zoom);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap &copy; CARTO',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+
+            L.control.zoom({ position: 'bottomleft' }).addTo(map);
+
+            const parentIcon = L.divIcon({
+                className: 'custom-parent-icon',
+                html: `<div class="w-8 h-8 rounded-full bg-indigo-600 border-2 border-white pulse-marker flex items-center justify-center text-white text-xs font-bold shadow-lg">
+                        <i class="fa-solid fa-user-shield"></i>
+                       </div>`,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            });
+
+            parentMarker = L.marker([initialVenue.lat, initialVenue.lng], { icon: parentIcon }).addTo(map);
+            parentMarker.bindPopup("<b>Tu posición (Padre/Madre)</b><br>Centro del perímetro seguro");
+
+            radiusCircle = L.circle([initialVenue.lat, initialVenue.lng], {
+                color: '#6366f1',
+                fillColor: '#818cf8',
+                fillOpacity: 0.15,
+                weight: 2,
+                dashArray: '6, 6',
+                radius: safeRadiusMeters
+            }).addTo(map);
+
+            groupMembers.forEach(m => {
+                createOrUpdateMemberMarker(m);
+            });
+        }
+
+        function createOrUpdateMemberMarker(member) {
+            const dist = calculateDistance(parentPosition.lat, parentPosition.lng, member.lat, member.lng);
+            const isOutside = dist > safeRadiusMeters;
+
+            const iconHtml = `
+                <div class="relative group">
+                    <div class="w-8 h-8 rounded-full ${isOutside ? 'bg-rose-600 pulse-marker-danger' : 'bg-slate-900'} border-2 flex items-center justify-center text-white text-xs font-bold shadow-xl" style="border-color: ${member.color}">
+                        ${member.isDaughter ? '<i class="fa-solid fa-heart text-pink-400"></i>' : member.name.charAt(0)}
+                    </div>
+                    <div class="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded border border-slate-700 whitespace-nowrap shadow-md">
+                        ${member.name.split(' ')[0]} (${Math.round(dist)}m)
+                    </div>
+                </div>
+            `;
+
+            const customIcon = L.divIcon({
+                className: 'custom-member-icon',
+                html: iconHtml,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            });
+
+            if (memberMarkers[member.id]) {
+                memberMarkers[member.id].setLatLng([member.lat, member.lng]);
+                memberMarkers[member.id].setIcon(customIcon);
+            } else {
+                const marker = L.marker([member.lat, member.lng], { icon: customIcon }).addTo(map);
+                marker.bindPopup(`
+                    <div class="p-1">
+                        <strong style="color:${member.color}">${member.name}</strong><br>
+                        Distancia: <b>${Math.round(dist)} m</b><br>
+                        Batería: <b>${member.battery}%</b><br>
+                        Señal: ${member.signal}
+                    </div>
+                `);
+                memberMarkers[member.id] = marker;
+            }
+        }
+
+        function updateMapMarkers() {
+            groupMembers.forEach(m => createOrUpdateMemberMarker(m));
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const φ1 = lat1 * Math.PI/180;
+            const φ2 = lat2 * Math.PI/180;
+            const Δφ = (lat2-lat1) * Math.PI/180;
+            const Δλ = (lon2-lon1) * Math.PI/180;
+
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+            return R * c;
+        }
+
+        function playSirenSound() {
+            if (!isAudioAlarmEnabled) return;
+            try {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+
+                if (alarmOscillator) return;
+
+                alarmOscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                alarmOscillator.type = 'sawtooth';
+                alarmOscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+
+                let high = true;
+                const interval = setInterval(() => {
+                    if (!alarmOscillator) {
+                        clearInterval(interval);
+                        return;
+                    }
+                    alarmOscillator.frequency.setValueAtTime(high ? 600 : 1100, audioContext.currentTime);
+                    high = !high;
+                }, 300);
+
+                gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+
+                alarmOscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                alarmOscillator.start();
+            } catch(e) {
+                console.error("Audio error:", e);
+            }
+        }
+
+        function stopSirenSound() {
+            if (alarmOscillator) {
+                try {
+                    alarmOscillator.stop();
+                    alarmOscillator.disconnect();
+                } catch(e){}
+                alarmOscillator = null;
+            }
+        }
+
+        function checkGeofenceAlerts() {
+            let breachedMembers = [];
+
+            groupMembers.forEach(m => {
+                const dist = calculateDistance(parentPosition.lat, parentPosition.lng, m.lat, m.lng);
+                if (dist > safeRadiusMeters && m.authorized) {
+                    breachedMembers.push({ member: m, dist: Math.round(dist) });
+                }
+            });
+
+            const alertBanner = document.getElementById('perimeterAlertBanner');
+            const insideCountBadge = document.getElementById('insideCountBadge');
+            const insideCount = groupMembers.length - breachedMembers.length;
+
+            insideCountBadge.innerText = `${insideCount}/${groupMembers.length} Dentro del radio`;
+
+            if (breachedMembers.length > 0) {
+                activeAlarmTriggered = true;
+                alertBanner.classList.remove('hidden');
+
+                const namesStr = breachedMembers.map(b => `${b.member.name} (${b.dist}m)`).join(', ');
+                document.getElementById('alertBannerTitle').innerText = `¡ALERTA DE PERÍMETRO (${breachedMembers.length})!`;
+                document.getElementById('alertBannerDetail').innerText = `Fuera de rango: ${namesStr}. Distancia permitida: ${safeRadiusMeters}m.`;
+
+                radiusCircle.setStyle({ color: '#ef4444', fillColor: '#f87171' });
+                playSirenSound();
+            } else {
+                activeAlarmTriggered = false;
+                alertBanner.classList.add('hidden');
+                radiusCircle.setStyle({ color: '#6366f1', fillColor: '#818cf8' });
+                stopSirenSound();
+            }
+        }
+
+        function renderRoster() {
+            const container = document.getElementById('membersContainer');
+            const countText = document.getElementById('membersCountText');
+            if (countText) countText.innerText = groupMembers.length;
+
+            container.innerHTML = '';
+
+            if (groupMembers.length === 0) {
+                container.innerHTML = `
+                    <div class="p-6 text-center border border-dashed border-slate-800 rounded-2xl bg-slate-900/50">
+                        <i class="fa-solid fa-users-slash text-2xl text-slate-600 mb-2"></i>
+                        <p class="text-xs text-slate-400">No hay teléfonos vinculados actualmente.</p>
+                        <button onclick="openScanToLocateModal()" class="mt-3 text-xs text-indigo-400 font-semibold underline">
+                            Generar QR para añadir
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            groupMembers.forEach(m => {
+                const dist = Math.round(calculateDistance(parentPosition.lat, parentPosition.lng, m.lat, m.lng));
+                const isOutside = dist > safeRadiusMeters;
+
+                const card = document.createElement('div');
+                card.className = `p-3 rounded-2xl border transition shadow-sm relative group ${
+                    isOutside 
+                    ? 'bg-rose-950/40 border-rose-600/60 shadow-rose-900/20' 
+                    : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+                }`;
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-md relative" style="background-color: ${m.color}">
+                                ${m.isDaughter ? '<i class="fa-solid fa-heart text-pink-200"></i>' : m.name.charAt(0)}
+                                <span class="absolute -top-1 -right-1 w-3 h-3 rounded-full ${m.authorized ? 'bg-emerald-400' : 'bg-slate-500'} border-2 border-slate-900"></span>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-sm text-slate-100 flex items-center gap-1.5">
+                                    ${m.name}
+                                    ${m.isDaughter ? '<span class="text-[10px] bg-pink-500/20 text-pink-300 px-1.5 py-0.2 rounded font-normal">Hija</span>' : ''}
+                                </h3>
+                                <div class="flex items-center gap-3 text-xs text-slate-400 mt-0.5">
+                                    <span><i class="fa-solid fa-battery-${m.battery > 70 ? 'full text-emerald-400' : m.battery > 30 ? 'half text-amber-400' : 'empty text-rose-400'}"></i> ${m.battery}%</span>
+                                    <span><i class="fa-solid fa-wifi text-indigo-400"></i> ${m.signal}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-right flex items-center gap-2">
+                            <div>
+                                <div class="text-sm font-extrabold ${isOutside ? 'text-rose-400 animate-pulse' : 'text-emerald-400'}">
+                                    ${dist} m
+                                </div>
+                                <span class="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full ${
+                                    isOutside ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-emerald-500/20 text-emerald-300'
+                                }">
+                                    ${isOutside ? '¡FUERA!' : 'Segura'}
+                                </span>
+                            </div>
+
+                            <!-- Remove member individual button -->
+                            <button onclick="removeMember('${m.id}', '${m.name.replace(/'/g, "\\'")}')" title="Eliminar a esta persona del seguimiento" class="ml-1 p-2 rounded-xl bg-slate-800/80 hover:bg-rose-600/30 text-slate-400 hover:text-rose-400 border border-slate-700 hover:border-rose-500/40 transition">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+                        <span class="text-[11px]"><i class="fa-solid fa-clock text-slate-500 mr-1"></i>Actualizado ahora</span>
+                        <div class="flex items-center gap-2">
+                            <button onclick="pingMember('${m.name}')" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] transition">
+                                <i class="fa-solid fa-bullhorn text-indigo-400 mr-1"></i>Vibrar
+                            </button>
+                            <button onclick="centerOnMember('${m.id}')" class="px-2 py-1 rounded bg-indigo-950 hover:bg-indigo-900 border border-indigo-800/50 text-indigo-300 text-[11px] transition">
+                                <i class="fa-solid fa-location-dot mr-1"></i>Ver en Mapa
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        function startSimulationLoop() {
+            setInterval(() => {
+                if (!isSimulationRunning) return;
+
+                groupMembers.forEach(m => {
+                    // Do not auto-simulate live browser GPS streams
+                    if (m.id === myDeviceId) return;
+
+                    const deltaLat = (Math.random() - 0.5) * 0.00004;
+                    const deltaLng = (Math.random() - 0.5) * 0.00004;
+
+                    m.lat += deltaLat;
+                    m.lng += deltaLng;
+
+                    if (Math.random() < 0.05 && m.battery > 5) {
+                        m.battery -= 1;
+                    }
+                });
+
+                updateMapMarkers();
+                checkGeofenceAlerts();
+                renderRoster();
+            }, 2500);
+        }
+
+        window.updateGeofenceRadius = function(val) {
+            safeRadiusMeters = parseInt(val);
+            document.getElementById('radiusDisplay').innerText = `${safeRadiusMeters} metros`;
+            if (radiusCircle) {
+                radiusCircle.setRadius(safeRadiusMeters);
+            }
+            checkGeofenceAlerts();
+            renderRoster();
+            updateMapMarkers();
+        };
+
+        window.changeVenue = function() {
+            const key = document.getElementById('venueSelect').value;
+            if (key === 'custom') {
+                initGeoLocation();
+                return;
+            }
+            currentVenueKey = key;
+            const venue = VENUES[key];
+            parentPosition = { lat: venue.lat, lng: venue.lng };
+
+            map.setView([venue.lat, venue.lng], venue.zoom);
+            parentMarker.setLatLng([venue.lat, venue.lng]);
+            radiusCircle.setLatLng([venue.lat, venue.lng]);
+
+            groupMembers.forEach((m, idx) => {
+                const angle = (idx / Math.max(1, groupMembers.length)) * 2 * Math.PI;
+                const offsetRadius = 0.00015 + (Math.random() * 0.0001);
+                m.lat = venue.lat + Math.cos(angle) * offsetRadius;
+                m.lng = venue.lng + Math.sin(angle) * offsetRadius;
+            });
+
+            updateMapMarkers();
+            checkGeofenceAlerts();
+            renderRoster();
+        };
+
+        window.initGeoLocation = function() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        parentPosition = { lat, lng };
+
+                        map.setView([lat, lng], 18);
+                        parentMarker.setLatLng([lat, lng]);
+                        radiusCircle.setLatLng([lat, lng]);
+
+                        groupMembers.forEach((m, idx) => {
+                            const angle = (idx / Math.max(1, groupMembers.length)) * 2 * Math.PI;
+                            m.lat = lat + Math.cos(angle) * 0.00015;
+                            m.lng = lng + Math.sin(angle) * 0.00015;
+                        });
+
+                        updateMapMarkers();
+                        checkGeofenceAlerts();
+                        renderRoster();
+                    },
+                    (error) => {
+                        console.warn("Geolocation access denied or unavailable.");
+                    }
+                );
+            }
+        };
+
+        window.centerOnParent = function() {
+            map.flyTo([parentPosition.lat, parentPosition.lng], 18);
+            parentMarker.openPopup();
+        };
+
+        window.centerOnMember = function(memberId) {
+            const m = groupMembers.find(mem => mem.id === memberId);
+            if (m && memberMarkers[memberId]) {
+                map.flyTo([m.lat, m.lng], 19);
+                memberMarkers[memberId].openPopup();
+            }
+        };
+
+        window.toggleAudioAlarm = function() {
+            isAudioAlarmEnabled = !isAudioAlarmEnabled;
+            const btnText = document.getElementById('alarmBtnText');
+            const alarmIcon = document.getElementById('alarmIcon');
+
+            if (isAudioAlarmEnabled) {
+                btnText.innerText = "Alarma Activada";
+                alarmIcon.className = "fa-solid fa-bell text-amber-400";
+            } else {
+                btnText.innerText = "Alarma Silenciada";
+                alarmIcon.className = "fa-solid fa-bell-slash text-slate-500";
+                stopSirenSound();
+            }
+        };
+
+        window.silenceAlarm = function() {
+            stopSirenSound();
+            document.getElementById('perimeterAlertBanner').classList.add('hidden');
+        };
+
+        window.toggleSimulation = function() {
+            isSimulationRunning = !isSimulationRunning;
+            document.getElementById('simBtnText').innerText = isSimulationRunning ? "Simulación: ON" : "Simulación: PAUSA";
+        };
+
+        window.triggerTestBreach = function() {
+            if (groupMembers.length === 0) return;
+            const target = groupMembers[groupMembers.length - 1];
+            target.lat = parentPosition.lat + 0.0012;
+            target.lng = parentPosition.lng + 0.0010;
+
+            updateMapMarkers();
+            checkGeofenceAlerts();
+            renderRoster();
+            centerOnMember(target.id);
+        };
+
+        window.pingMember = function(name) {
+            alertModal(`📢 Enviando alerta de vibración y sonido prioritario al teléfono de ${name}.`);
+        };
+
+        window.openShareModal = function() {
+            openScanToLocateModal();
+        };
+
+        window.closeShareModal = function() {
+            document.getElementById('shareModal').classList.add('hidden');
+        };
+
+        window.copyGroupLink = function() {
+            const codeInput = document.getElementById('groupCodeInput');
+            codeInput.select();
+            document.execCommand('copy');
+            alertModal("✅ Enlace de sincronización copiado al portapapeles. Envíaselo por WhatsApp a tu hija o sus amigas.");
+        };
+
+        function alertModal(msg) {
+            const modal = document.createElement('div');
+            modal.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4";
+            modal.innerHTML = `
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl max-w-sm w-full text-center shadow-2xl">
+                    <div class="text-indigo-400 text-3xl mb-3"><i class="fa-solid fa-circle-info"></i></div>
+                    <p class="text-sm text-slate-200 mb-5">${msg}</p>
+                    <button onclick="this.closest('.fixed').remove()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition">Entendido</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+    </script>
+</body>
+</html>
