@@ -183,18 +183,15 @@
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
                     
-                    <!-- Venue Selector -->
+                    <!-- Base Location Badge (GPS Live Continuous) -->
                     <div>
                         <label class="block text-xs font-medium text-slate-400 mb-1">
                             <i class="fa-solid fa-map-pin text-indigo-400 mr-1"></i>Ubicación Base
                         </label>
-                        <select id="venueSelect" onchange="changeVenue()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-medium">
-                            <option value="custom">📍 GPS Actual (Mi Posición)</option>
-                            <option value="santjordi">Palau Sant Jordi (Barcelona)</option>
-                            <option value="wizink">WiZink Center (Madrid)</option>
-                            <option value="bernabeu">Estadio Santiago Bernabéu (Madrid)</option>
-                            <option value="olympic">Estadi Olímpic Lluís Companys</option>
-                        </select>
+                        <div class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-indigo-300 font-semibold flex items-center gap-2 shadow-inner">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping flex-shrink-0"></span>
+                            <span class="truncate">📍 GPS Actual (Seguimiento en Vivo)</span>
+                        </div>
                     </div>
 
                     <!-- Geofence Radius Slider -->
@@ -434,14 +431,6 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Predefined Venue Coordinates
-        const VENUES = {
-            santjordi: { name: 'Palau Sant Jordi', lat: 41.3634, lng: 2.1526, zoom: 18 },
-            wizink: { name: 'WiZink Center', lat: 40.4239, lng: -3.6713, zoom: 18 },
-            bernabeu: { name: 'Santiago Bernabéu', lat: 40.4531, lng: -3.6883, zoom: 18 },
-            olympic: { name: 'Estadi Olímpic Lluís Companys', lat: 41.3647, lng: 2.1556, zoom: 18 }
-        };
-
         const urlParams = new URLSearchParams(window.location.search);
         
         let activeGroupId = urlParams.get('groupId');
@@ -481,7 +470,7 @@
         let gpsSyncCounter = 0;
         let currentPosCache = null;
 
-        let currentVenueKey = 'santjordi';
+        let hostWatchId = null;
         let safeRadiusMeters = 50;
         let map = null;
         let parentMarker = null;
@@ -709,7 +698,7 @@
 
         window.addEventListener('load', async () => {
             initLeafletMap();
-            initGeoLocation();
+            startHostGpsTracking();
             initMqttSync();
             
             await authReadyPromise;
@@ -996,8 +985,7 @@
                 map = null;
             }
 
-            const initialVenue = VENUES[currentVenueKey];
-            map = L.map('map', { zoomControl: false }).setView([initialVenue.lat, initialVenue.lng], initialVenue.zoom);
+            map = L.map('map', { zoomControl: false }).setView([parentPosition.lat, parentPosition.lng], 18);
 
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; OpenStreetMap &copy; CARTO',
@@ -1016,10 +1004,10 @@
                 iconAnchor: [18, 18]
             });
 
-            parentMarker = L.marker([initialVenue.lat, initialVenue.lng], { icon: parentIcon }).addTo(map);
+            parentMarker = L.marker([parentPosition.lat, parentPosition.lng], { icon: parentIcon }).addTo(map);
             parentMarker.bindPopup("<b>Mi Posición GPS (Líder)</b><br>Centro del perímetro seguro");
 
-            radiusCircle = L.circle([initialVenue.lat, initialVenue.lng], {
+            radiusCircle = L.circle([parentPosition.lat, parentPosition.lng], {
                 color: '#6366f1',
                 fillColor: '#818cf8',
                 fillOpacity: 0.15,
@@ -1273,61 +1261,61 @@
             updateMapMarkers();
         };
 
-        window.changeVenue = function() {
-            const key = document.getElementById('venueSelect').value;
-            if (key === 'custom') {
-                initGeoLocation();
-                return;
-            }
-            currentVenueKey = key;
-            const venue = VENUES[key];
-            parentPosition = { lat: venue.lat, lng: venue.lng };
-
-            map.setView([venue.lat, venue.lng], venue.zoom);
-            parentMarker.setLatLng([venue.lat, venue.lng]);
-            radiusCircle.setLatLng([venue.lat, venue.lng]);
-
-            updateMapMarkers();
-            checkGeofenceAlerts();
-            renderRoster();
-        };
-
-        window.initGeoLocation = function() {
+        window.startHostGpsTracking = function() {
             if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        parentPosition = { lat, lng };
+                const onPosUpdate = (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    const acc = Math.round(position.coords.accuracy);
 
-                        map.setView([lat, lng], 18);
+                    const isFirstFix = !currentPosCache;
+                    parentPosition = { lat, lng };
+                    currentPosCache = { lat, lng };
+
+                    if (map && parentMarker && radiusCircle) {
                         parentMarker.setLatLng([lat, lng]);
                         radiusCircle.setLatLng([lat, lng]);
+                        if (isFirstFix) {
+                            map.setView([lat, lng], 18);
+                        }
+                    }
 
-                        const acc = Math.round(position.coords.accuracy);
-                        document.getElementById('gpsAccuracyText').innerText = `±${acc}m`;
+                    const accText = document.getElementById('gpsAccuracyText');
+                    if (accText) accText.innerText = `±${acc}m`;
 
-                        updateMapMarkers();
-                        checkGeofenceAlerts();
-                        renderRoster();
-                    },
-                    (error) => console.warn("GPS Notice"),
-                    { enableHighAccuracy: true }
-                );
+                    if (myRegisteredName) {
+                        pushLocationToServer(lat, lng);
+                    }
+
+                    // Actualizar mapa, distancias de integrantes y alertas automáticamente al mover el host
+                    updateMapMarkers();
+                    checkGeofenceAlerts();
+                    renderRoster();
+                };
+
+                navigator.geolocation.getCurrentPosition(onPosUpdate, (err) => console.warn("GPS Host initial error:", err), {
+                    enableHighAccuracy: true,
+                    maximumAge: 1000,
+                    timeout: 10000
+                });
+
+                if (hostWatchId !== null) {
+                    navigator.geolocation.clearWatch(hostWatchId);
+                }
+
+                // Seguimiento activo continuo en tiempo real
+                hostWatchId = navigator.geolocation.watchPosition(onPosUpdate, (err) => console.warn("GPS Host watch error:", err), {
+                    enableHighAccuracy: true,
+                    maximumAge: 2000,
+                    timeout: 15000
+                });
             }
         };
 
         window.centerOnParent = function() {
+            startHostGpsTracking();
             map.flyTo([parentPosition.lat, parentPosition.lng], 18);
             parentMarker.openPopup();
-        };
-
-        window.centerOnMember = function(memberId) {
-            const m = groupMembers.find(mem => mem.id === memberId);
-            if (m && memberMarkers[memberId]) {
-                map.flyTo([m.lat, m.lng], 19);
-                memberMarkers[memberId].openPopup();
-            }
         };
 
         window.toggleAudioAlarm = function() {
