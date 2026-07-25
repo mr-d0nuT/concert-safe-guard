@@ -94,6 +94,15 @@
             will-change: transform;
         }
 
+        .leaflet-map-pane {
+            transition: transform 0.15s ease-out;
+            will-change: transform;
+        }
+
+        .animate-spin-slow {
+            animation: spin 8s linear infinite;
+        }
+
         #mapContainer:fullscreen,
         #mapContainer:-webkit-full-screen {
             width: 100vw !important;
@@ -248,15 +257,21 @@
                 <div id="map" class="w-full h-full min-h-[400px] lg:min-h-[480px] rounded-xl z-0"></div>
 
                 <div class="absolute top-3 right-3 z-10 flex items-center gap-2 pointer-events-auto">
+                    <button id="compassMapBtn" onclick="toggleCompassOrientation()" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-950/90 backdrop-blur border border-slate-700/80 text-emerald-400 hover:border-emerald-500/80 flex items-center justify-center shadow-xl transition transform active:scale-95" title="Activar/Desactivar Orientación con Brújula">
+                        <i id="compassIcon" class="fa-solid fa-compass text-emerald-400 text-xs sm:text-sm animate-spin-slow"></i>
+                    </button>
                     <button id="fullscreenMapBtn" onclick="toggleMapFullscreen()" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-950/90 backdrop-blur border border-slate-700/80 text-slate-200 hover:text-white hover:border-indigo-500/80 flex items-center justify-center shadow-xl transition transform active:scale-95" title="Pantalla Completa">
                         <i id="fullscreenIcon" class="fa-solid fa-expand text-indigo-400 text-xs sm:text-sm"></i>
                     </button>
                 </div>
 
-                <div class="absolute top-4 left-4 z-10 flex flex-wrap gap-2 pointer-events-none pr-12">
+                <div class="absolute top-4 left-4 z-10 flex flex-wrap gap-2 pointer-events-none pr-24">
                     <span class="bg-slate-950/90 backdrop-blur border border-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-2 font-medium">
                         <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping"></span>
                         <i class="fa-solid fa-user-shield text-indigo-400"></i> Mi GPS
+                    </span>
+                    <span id="headingBadge" class="bg-slate-950/90 backdrop-blur border border-slate-700 text-indigo-300 text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 font-mono">
+                        <i class="fa-solid fa-compass text-xs text-indigo-400"></i> <span id="headingText">Rumbo: 0°</span>
                     </span>
                     <span class="bg-slate-950/90 backdrop-blur border border-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-2 font-medium">
                         <span id="statusCircle" class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
@@ -597,7 +612,7 @@
         let arVideoStream = null;
         let arAnimationFrame = null;
         let deviceHeading = 0;
-        let currentOutfitBase64 = null;
+        let isCompassMapOriented = true;
 
         const MQTT_BROKERS = [
             'wss://broker.emqx.io:8084/mqtt',
@@ -1092,8 +1107,13 @@
 
             const parentIcon = L.divIcon({
                 className: 'custom-parent-icon',
-                html: `<div class="w-9 h-9 rounded-full bg-indigo-600 border-2 border-white pulse-marker-parent flex items-center justify-center text-white text-xs font-bold shadow-2xl">
-                        <i class="fa-solid fa-user-shield"></i>
+                html: `<div class="relative flex items-center justify-center">
+                        <div id="parentHeadingCone" class="absolute -top-3.5 text-emerald-400 text-sm transition-transform duration-100" style="transform: rotate(0deg);">
+                            <i class="fa-solid fa-location-arrow drop-shadow-md"></i>
+                        </div>
+                        <div class="w-9 h-9 rounded-full bg-indigo-600 border-2 border-white pulse-marker-parent flex items-center justify-center text-white text-xs font-bold shadow-2xl">
+                            <i class="fa-solid fa-user-shield"></i>
+                        </div>
                        </div>`,
                 iconSize: [36, 36],
                 iconAnchor: [18, 18]
@@ -1112,135 +1132,67 @@
             }).addTo(map);
         }
 
-        function createOrUpdateMemberMarker(member) {
-            const dist = calculateDistance(parentPosition.lat, parentPosition.lng, member.lat, member.lng);
-            const isOutside = dist > safeRadiusMeters;
+        function updateMapOrientation(heading) {
+            deviceHeading = heading;
 
-            const pulseClass = member.sos ? 'pulse-marker-sos' : (isOutside ? 'pulse-marker-danger' : '');
-            const bgClass = member.sos ? 'bg-amber-500' : (isOutside ? 'bg-rose-600' : 'bg-slate-900');
+            const headingText = document.getElementById('headingText');
+            if (headingText) {
+                headingText.innerText = `Rumbo: ${Math.round(heading)}°`;
+            }
 
-            const iconHtml = `
-                <div class="relative group">
-                    <div class="w-8 h-8 rounded-full ${bgClass} ${pulseClass} border-2 flex items-center justify-center text-white text-xs font-black shadow-xl" style="border-color: ${member.color}">
-                        ${member.sos ? '<i class="fa-solid fa-hand text-xs text-slate-950"></i>' : member.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div class="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-slate-950/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-md border border-slate-700 whitespace-nowrap shadow-lg">
-                        ${member.name.split(' ')[0]} (${Math.round(dist)}m)
-                    </div>
-                </div>
-            `;
+            const headingCone = document.getElementById('parentHeadingCone');
+            if (headingCone) {
+                headingCone.style.transform = `rotate(${heading}deg)`;
+            }
 
-            const customIcon = L.divIcon({
-                className: 'custom-member-icon',
-                html: iconHtml,
-                iconSize: [32, 32],
-                iconAnchor: [16, 16]
-            });
-
-            const elapsedSecs = Math.max(0, Math.floor((Date.now() - member.updated) / 1000));
-            const timeAgoStr = elapsedSecs < 10 ? 'Ahora mismo' : `Hace ${elapsedSecs}s`;
-
-            if (memberMarkers[member.id]) {
-                memberMarkers[member.id].setLatLng([member.lat, member.lng]);
-                memberMarkers[member.id].setIcon(customIcon);
-            } else {
-                const marker = L.marker([member.lat, member.lng], { icon: customIcon }).addTo(map);
-                marker.bindPopup(`
-                    <div class="p-1 font-sans">
-                        <strong style="color:${member.color}">${member.name}</strong><br>
-                        Distancia: <b>${Math.round(dist)} m</b><br>
-                        Batería: <b>${member.battery}%</b><br>
-                        Transmisión: <b>${timeAgoStr}</b>
-                    </div>
-                `);
-                memberMarkers[member.id] = marker;
+            const mapPane = document.querySelector('.leaflet-map-pane');
+            if (mapPane) {
+                if (isCompassMapOriented) {
+                    mapPane.style.transformOrigin = 'center center';
+                    mapPane.style.transform = `rotate(${-heading}deg)`;
+                } else {
+                    mapPane.style.transform = 'none';
+                }
             }
         }
 
-        function updateMapMarkers() {
-            groupMembers.forEach(m => createOrUpdateMemberMarker(m));
-        }
+        window.toggleCompassOrientation = async function() {
+            isCompassMapOriented = !isCompassMapOriented;
+            const btnIcon = document.getElementById('compassIcon');
 
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3;
-            const φ1 = lat1 * Math.PI/180;
-            const φ2 = lat2 * Math.PI/180;
-            const Δφ = (lat2-lat1) * Math.PI/180;
-            const Δλ = (lon2-lon1) * Math.PI/180;
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission === 'granted') {
+                        initOrientationSensor();
+                    }
+                } catch (e) {}
+            }
 
-            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                      Math.cos(φ1) * Math.cos(φ2) *
-                      Math.sin(Δλ/2) * Math.sin(Δλ/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-            return R * c;
-        }
-
-        function calculateBearing(lat1, lon1, lat2, lon2) {
-            const φ1 = lat1 * Math.PI / 180;
-            const φ2 = lat2 * Math.PI / 180;
-            const Δλ = (lon2 - lon1) * Math.PI / 180;
-
-            const y = Math.sin(Δλ) * Math.cos(φ2);
-            const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
-            const θ = Math.atan2(y, x);
-            return (θ * 180 / Math.PI + 360) % 360;
-        }
-
-        window.toggleMapFullscreen = function() {
-            const mapBox = document.getElementById('mapContainer');
-            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                if (mapBox.requestFullscreen) {
-                    mapBox.requestFullscreen();
-                } else if (mapBox.webkitRequestFullscreen) {
-                    mapBox.webkitRequestFullscreen();
-                }
-                if (screen.orientation && screen.orientation.lock) {
-                    screen.orientation.lock('landscape').catch(() => {});
-                }
+            if (isCompassMapOriented) {
+                if (btnIcon) btnIcon.className = "fa-solid fa-compass text-emerald-400 text-xs sm:text-sm animate-spin-slow";
+                updateMapOrientation(deviceHeading);
+                showToastNotification("🧭 Modo Brújula Activado: El mapa gira según giras el teléfono.");
             } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
-                }
+                if (btnIcon) btnIcon.className = "fa-solid fa-compass text-indigo-400 text-xs sm:text-sm";
+                const mapPane = document.querySelector('.leaflet-map-pane');
+                if (mapPane) mapPane.style.transform = 'none';
+                showToastNotification("📍 Modo Norte Fijo Activado.");
             }
         };
-
-        function handleFullscreenChange() {
-            const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
-            const icon = document.getElementById('fullscreenIcon');
-
-            if (isFullscreen) {
-                if (icon) icon.className = "fa-solid fa-compress text-indigo-400 text-xs sm:text-sm";
-            } else {
-                if (icon) icon.className = "fa-solid fa-expand text-indigo-400 text-xs sm:text-sm";
-                if (screen.orientation && screen.orientation.unlock) {
-                    try { screen.orientation.unlock(); } catch(e){}
-                }
-            }
-
-            setTimeout(() => {
-                if (map) {
-                    map.invalidateSize();
-                }
-            }, 200);
-        }
-
-        document.addEventListener('fullscreenchange', handleFullscreenChange);
-        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
 
         function initOrientationSensor() {
             if (window.DeviceOrientationEvent) {
                 window.addEventListener('deviceorientation', (e) => {
+                    let heading = null;
                     if (e.webkitCompassHeading) {
-                        deviceHeading = e.webkitCompassHeading;
+                        heading = e.webkitCompassHeading;
                     } else if (e.alpha !== null) {
-                        deviceHeading = (360 - e.alpha) % 360;
+                        heading = (360 - e.alpha) % 360;
                     }
-                    const headingText = document.getElementById('arHeadingText');
-                    if (headingText) {
-                        headingText.innerText = `Rumbo: ${Math.round(deviceHeading)}° | Brújula Activa`;
+
+                    if (heading !== null && !isNaN(heading)) {
+                        updateMapOrientation(heading);
                     }
                 }, true);
             }
@@ -1590,6 +1542,7 @@
             initLeafletMap();
             startHostGpsTracking();
             initMqttSync();
+            initOrientationSensor();
             
             await authReadyPromise;
 
