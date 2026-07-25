@@ -232,6 +232,2043 @@
         </div>
     </div>
 
+    <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+        <!-- LEFT COLUMN: MAP & CONTROLS (8 Cols) -->
+        <section class="lg:col-span-8 flex flex-col gap-4">
+
+            <!-- Venue & Geofence Control Bar -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                    
+                    <!-- Geofence Radius Slider -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-medium text-slate-400">
+                                <i class="fa-solid fa-draw-polygon text-indigo-400 mr-1"></i>Radio Seguro (Perímetro)
+                            </label>
+                            <span id="radiusDisplay" class="text-xs font-extrabold text-indigo-400 bg-indigo-950 px-2 py-0.5 rounded-md border border-indigo-800/50">50 metros</span>
+                        </div>
+                        <input type="range" id="radiusRange" min="10" max="500" step="5" value="50" oninput="updateGeofenceRadius(this.value)" class="w-full accent-indigo-500 bg-slate-950 h-2 rounded-lg cursor-pointer">
+                    </div>
+
+                    <!-- Tracking Controls -->
+                    <div class="flex items-center gap-2">
+                        <button onclick="centerOnParent()" class="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-indigo-500/50 text-slate-200 text-xs rounded-xl font-bold flex items-center justify-center gap-2 transition active:scale-95 shadow-md">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                            <i class="fa-solid fa-crosshairs text-indigo-400 text-sm"></i> Centrar mi Ubicación GPS
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Map Container -->
+            <div id="mapContainer" class="bg-slate-900 border border-slate-800 rounded-2xl p-2 shadow-xl flex-1 min-h-[420px] lg:min-h-[500px] relative overflow-hidden flex flex-col">
+                
+                <!-- Leaflet Map Container -->
+                <div id="map" class="w-full h-full min-h-[400px] lg:min-h-[480px] rounded-xl z-0"></div>
+
+                <!-- Top Right Fullscreen Button & Controls (Compact Icon Button) -->
+                <div class="absolute top-3 right-3 z-10 flex items-center gap-2 pointer-events-auto">
+                    <button id="fullscreenMapBtn" onclick="toggleMapFullscreen()" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-950/90 backdrop-blur border border-slate-700/80 text-slate-200 hover:text-white hover:border-indigo-500/80 flex items-center justify-center shadow-xl transition transform active:scale-95" title="Pantalla Completa y Modo Horizontal">
+                        <i id="fullscreenIcon" class="fa-solid fa-expand text-indigo-400 text-xs sm:text-sm"></i>
+                    </button>
+                </div>
+
+                <!-- Map Overlay Indicators -->
+                <div class="absolute top-4 left-4 z-10 flex flex-wrap gap-2 pointer-events-none pr-12">
+                    <span class="bg-slate-950/90 backdrop-blur border border-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-2 font-medium">
+                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping"></span>
+                        <i class="fa-solid fa-user-shield text-indigo-400"></i> Mi GPS
+                    </span>
+                    <span class="bg-slate-950/90 backdrop-blur border border-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-2 font-medium">
+                        <span id="statusCircle" class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                        <span id="insideCountBadge">0 Móviles Conectados</span>
+                    </span>
+                    <span id="gpsAccuracyBadge" class="bg-slate-950/90 backdrop-blur border border-slate-700 text-amber-300 text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 font-mono">
+                        <i class="fa-solid fa-bullseye text-xs"></i> Precisión: <span id="gpsAccuracyText">Obteniendo...</span>
+                    </span>
+                </div>
+
+                <!-- Floating Quick AR Camera Button over Map -->
+                <div class="absolute bottom-6 right-6 z-10">
+                    <button onclick="openARView()" class="px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-600 to-indigo-600 hover:from-emerald-400 hover:to-indigo-500 text-white font-extrabold text-xs shadow-2xl shadow-emerald-500/50 flex items-center gap-2 transition transform active:scale-90 border border-emerald-400/40">
+                        <i class="fa-solid fa-camera text-base"></i>
+                        <span>Abrir Cámara RA</span>
+                    </button>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- RIGHT COLUMN: CONNECTED DEVICES & SOS (4 Cols) -->
+        <section class="lg:col-span-4 flex flex-col gap-4">
+
+            <!-- Protocol Safety Banner -->
+            <div class="bg-slate-900 border border-indigo-500/30 rounded-2xl p-3.5 shadow-xl bg-gradient-to-b from-indigo-950/30 to-slate-900">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-indigo-300 flex items-center gap-1.5 uppercase tracking-wider">
+                        <i class="fa-solid fa-shield-cat text-indigo-400 text-sm"></i> Monitoreo en Tiempo Real
+                    </span>
+                    <button onclick="openSafetyTipsModal()" class="text-[11px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/40 font-semibold hover:bg-indigo-500/30 transition">
+                        Ver Consejos
+                    </button>
+                </div>
+                <p class="text-[11px] text-slate-300 mt-1 leading-snug">
+                    Vincular los teléfonos mediante el código QR para monitoreo GPS continuo y alertas sonoras de perímetro.
+                </p>
+            </div>
+
+            <!-- Member List Header Card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="font-bold text-slate-100 text-base flex items-center gap-2">
+                        <i class="fa-solid fa-users text-indigo-400"></i>
+                        Móviles Conectados (<span id="membersCountText">0</span>)
+                    </h2>
+                    <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-lg border border-emerald-500/20 font-semibold" id="syncStatus">
+                        <i class="fa-solid fa-satellite-dish text-emerald-400 mr-1 text-[10px] animate-pulse"></i>En Vivo
+                    </span>
+                </div>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    Código de Sala: <strong class="text-indigo-300 font-mono text-sm font-black" id="groupCodeBadgeInline">...</strong>
+                </p>
+
+                <!-- Action Buttons -->
+                <div class="mt-3 grid grid-cols-2 gap-2">
+                    <button onclick="openScanToLocateModal()" class="w-full py-2.5 px-3 bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-lg shadow-indigo-600/25 active:scale-95">
+                        <i class="fa-solid fa-qrcode text-xs"></i> Ver QR
+                    </button>
+                    <button onclick="openAiOutfitScannerModal()" class="w-full py-2.5 px-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-lg shadow-purple-600/25 active:scale-95" title="Registrar vestimenta e imagen con IA para ficha de búsqueda">
+                        <i class="fa-solid fa-shirt text-xs"></i> Registrar Ropa IA
+                    </button>
+                </div>
+            </div>
+
+            <!-- Members List Scrollable Container -->
+            <div id="membersContainer" class="flex flex-col gap-3 overflow-y-auto max-h-[520px] pr-1">
+                <!-- Dynamic real member cards injected via JavaScript -->
+            </div>
+
+            <!-- SOS Action Widget (For tracked device view) -->
+            <div id="sosWidgetCard" class="bg-slate-900 border border-amber-500/30 rounded-2xl p-4 shadow-xl hidden">
+                <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-exclamation"></i> Botón de Auxilio Rápido
+                </h3>
+                <p class="text-xs text-slate-400 mb-3">Si te has separado, pulsa para mandar aviso directo de emergencia.</p>
+                <button onclick="sendSosSignal()" class="w-full py-3 bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center justify-center gap-2 transition transform active:scale-95 uppercase tracking-wide">
+                    <i class="fa-solid fa-hand text-base"></i>
+                    <span>¡Enviar Alerta SOS al Grupo!</span>
+                </button>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- AR CAMERA OVERLAY FULLSCREEN MODAL -->
+    <div id="arCameraModal" class="fixed inset-0 z-[120] bg-slate-950 hidden flex flex-col">
+        <div class="relative flex-1 w-full h-full overflow-hidden bg-black">
+            <!-- Video Feed -->
+            <video id="arVideo" autoplay playsinline muted class="w-full h-full object-cover"></video>
+            
+            <!-- HUD Reticle Grid Overlay -->
+            <div class="absolute inset-0 ar-hud-grid pointer-events-none"></div>
+
+            <!-- Dynamic AR Member Badges -->
+            <div id="arBadgesContainer" class="absolute inset-0 pointer-events-none"></div>
+
+            <!-- AR Top Navigation Bar -->
+            <div class="absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-auto">
+                <div class="bg-slate-950/80 backdrop-blur border border-slate-700/80 px-3 py-1.5 rounded-2xl flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span id="arHeadingText" class="text-xs font-mono font-bold text-slate-200">Cámara RA Activa</span>
+                </div>
+                <button onclick="closeARView()" class="w-10 h-10 rounded-full bg-slate-950/80 backdrop-blur border border-slate-700 text-slate-200 hover:text-white flex items-center justify-center shadow-xl transition active:scale-90">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- AR Compass Radar Strip -->
+            <div class="absolute bottom-6 left-4 right-4 z-20 bg-slate-950/85 backdrop-blur border border-slate-800 p-3 rounded-2xl pointer-events-auto">
+                <div class="flex items-center justify-between text-[11px] font-bold text-slate-400 mb-1 font-mono">
+                    <span>N (0°)</span>
+                    <span>E (90°)</span>
+                    <span>S (180°)</span>
+                    <span>O (270°)</span>
+                    <span>N (360°)</span>
+                </div>
+                <div class="relative w-full h-3 bg-slate-900 rounded-full border border-slate-800 overflow-hidden">
+                    <div id="radarCompassIndicator" class="absolute top-0 bottom-0 w-1 bg-indigo-500 rounded-full transition-all"></div>
+                    <div id="radarMemberDots" class="absolute inset-0 pointer-events-none"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GEMINI AI SAFETY ASSISTANT CHAT & SOS MODAL -->
+    <div id="aiAssistantModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[130] flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-purple-500/40 rounded-3xl max-w-lg w-full p-5 shadow-2xl flex flex-col h-[85vh] max-h-[650px] relative">
+            
+            <button onclick="closeAiAssistantModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center transition z-10">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <!-- Header -->
+            <div class="flex items-center gap-3 border-b border-slate-800 pb-3 mb-3 pr-8">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white text-xl shadow-lg shadow-purple-500/30">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <div>
+                    <h3 class="font-extrabold text-base text-white flex items-center gap-2">
+                        ConcertSafe Guard AI Assistant
+                        <span class="text-[9px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/30 font-mono">Gemini 3 Flash</span>
+                    </h3>
+                    <p class="text-xs text-slate-400">Asesor de seguridad, protocolos y rescates en tiempo real</p>
+                </div>
+            </div>
+
+            <!-- Suggestion Chips -->
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-2 mb-2 no-scrollbar text-[11px]">
+                <button onclick="sendQuickAiPrompt('¿Qué protocolo seguir si un menor se pierde en el concierto?')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-slate-800 hover:bg-purple-900/60 text-purple-200 border border-slate-700 transition">
+                    🚨 Menor perdido
+                </button>
+                <button onclick="sendQuickAiPrompt('Genera una alerta para entregar al personal de seguridad del festival.')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-slate-800 hover:bg-purple-900/60 text-purple-200 border border-slate-700 transition">
+                    📋 Reporte para seguridad
+                </button>
+                <button onclick="sendQuickAiPrompt('Consejos de orientación si no hay cobertura de datos móviles en el recinto.')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-slate-800 hover:bg-purple-900/60 text-purple-200 border border-slate-700 transition">
+                    📶 Sin cobertura
+                </button>
+            </div>
+
+            <!-- Messages Stream Area -->
+            <div id="aiChatMessages" class="flex-1 overflow-y-auto space-y-3 p-3 bg-slate-950/80 rounded-2xl border border-slate-800/80 mb-3 text-xs">
+                <div class="flex items-start gap-2.5 bg-slate-900/90 p-3 rounded-2xl border border-slate-800">
+                    <div class="w-7 h-7 rounded-xl bg-purple-600/30 text-purple-300 flex items-center justify-center flex-shrink-0 text-xs">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="space-y-1 text-slate-200 leading-relaxed">
+                        <p class="font-bold text-purple-300">¡Hola! Soy tu asistente IA de ConcertSafe Guard.</p>
+                        <p>Te puedo guiar ante pérdidas, aglomeraciones o alertas SOS en el recinto. ¿En qué te puedo ayudar?</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="aiLoadingIndicator" class="hidden p-2 mb-2 bg-purple-950/40 border border-purple-500/30 rounded-xl text-xs text-purple-300 flex items-center justify-between">
+                <span class="flex items-center gap-2">
+                    <i class="fa-solid fa-spinner animate-spin text-purple-400"></i>
+                    <span>Gemini IA analizando situación...</span>
+                </span>
+            </div>
+
+            <!-- Chat Input Bar -->
+            <form onsubmit="handleAiChatSubmit(event)" class="flex items-center gap-2">
+                <input type="text" id="aiChatInput" placeholder="Haz una pregunta de seguridad o consulta SOS..." required class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                <button type="submit" id="sendAiChatBtn" class="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg transition active:scale-95">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+
+        </div>
+    </div>
+
+    <!-- OUTFIT & PHOTO VISION ANALYSIS MODAL -->
+    <div id="aiOutfitScannerModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[130] flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="document.getElementById('aiOutfitScannerModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="text-center mb-4">
+                <div class="w-12 h-12 bg-purple-600/20 text-purple-400 rounded-2xl flex items-center justify-center mx-auto mb-2 border border-purple-500/30 text-2xl">
+                    <i class="fa-solid fa-shirt"></i>
+                </div>
+                <h3 class="text-base font-extrabold text-white">Análisis IA de Ropa e Indumentaria</h3>
+                <p class="text-xs text-slate-400">Sube o toma una foto del integrante para que la IA extraiga detalles visuales en caso de extravío.</p>
+            </div>
+
+            <!-- Image Input Box -->
+            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 mb-4 flex flex-col items-center gap-3">
+                <input type="file" id="outfitPhotoInput" accept="image/*" capture="environment" onchange="previewOutfitPhoto(event)" class="hidden">
+                
+                <div id="outfitPreviewContainer" onclick="document.getElementById('outfitPhotoInput').click()" class="w-full h-44 bg-slate-900 rounded-xl border-2 border-dashed border-slate-700 hover:border-purple-500 transition cursor-pointer flex flex-col items-center justify-center p-2 text-center overflow-hidden relative">
+                    <i class="fa-solid fa-camera text-3xl text-purple-400 mb-2"></i>
+                    <p class="text-xs font-bold text-slate-300">Toca para seleccionar o tomar foto</p>
+                    <p class="text-[11px] text-slate-500">Muestra la ropa completa (chaqueta, camiseta, calzado)</p>
+                    <img id="outfitPreviewImg" class="absolute inset-0 w-full h-full object-cover hidden" alt="Vista previa indumentaria" />
+                </div>
+
+                <button id="analyzeOutfitBtn" onclick="processOutfitPhoto()" disabled class="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-40 text-white font-extrabold text-xs rounded-xl shadow-lg transition active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>Analizar Indumentaria con IA Gemini</span>
+                </button>
+            </div>
+
+            <!-- Output Dossier Result -->
+            <div id="outfitAnalysisResult" class="hidden p-3.5 bg-slate-950 rounded-2xl border border-purple-500/30 text-xs space-y-2">
+                <div class="flex items-center justify-between text-purple-300 font-bold">
+                    <span><i class="fa-solid fa-id-card mr-1"></i> Ficha de Búsqueda IA</span>
+                    <button onclick="copyOutfitDossier()" class="text-[10px] bg-purple-900/60 hover:bg-purple-800 text-purple-200 px-2 py-1 rounded font-bold transition">
+                        <i class="fa-solid fa-copy mr-1"></i> Copiar Ficha
+                    </button>
+                </div>
+                <div id="outfitDossierText" class="text-slate-300 leading-relaxed font-sans text-[11px] whitespace-pre-wrap"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- SAFETY TIPS PROTOCOL MODAL -->
+    <div id="safetyTipsModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-[110] flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="document.getElementById('safetyTipsModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="w-12 h-12 bg-indigo-500/20 text-indigo-400 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3 border border-indigo-500/30">
+                <i class="fa-solid fa-shield-cat"></i>
+            </div>
+            <h3 class="text-base font-extrabold text-white text-center mb-3">Protocolo Obligatorio Anti-Pérdida</h3>
+            
+            <ul class="space-y-2.5 text-xs text-slate-300 mb-5">
+                <li class="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950 border border-slate-800">
+                    <i class="fa-solid fa-check text-emerald-400 mt-0.5"></i>
+                    <span><strong>1. Pulsera con Teléfono:</strong> Escribe tu número móvil con rotulador indeleble en la pulsera del menor.</span>
+                </li>
+                <li class="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950 border border-slate-800">
+                    <i class="fa-solid fa-check text-emerald-400 mt-0.5"></i>
+                    <span><strong>2. Punto de Encuentro Fijo:</strong> Acuerda un lugar visible al entrar (p. ej., bajo el cartel de Info).</span>
+                </li>
+                <li class="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950 border border-slate-800">
+                    <i class="fa-solid fa-check text-emerald-400 mt-0.5"></i>
+                    <span><strong>3. Foto Actualizada:</strong> Hazles una foto de cuerpo entero justo antes de entrar para saber exacta la ropa que llevan.</span>
+                </li>
+            </ul>
+
+            <button onclick="document.getElementById('safetyTipsModal').classList.add('hidden')" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg transition">
+                Entendido
+            </button>
+        </div>
+    </div>
+
+    <!-- JOIN REQUEST MODAL FOR MOBILE DEVICES -->
+    <div id="joinGroupModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[80] flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-indigo-500/40 rounded-3xl max-w-md w-full p-6 shadow-2xl relative text-center">
+            
+            <button onclick="document.getElementById('joinGroupModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center transition" title="Cerrar">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="w-16 h-16 bg-gradient-to-tr from-indigo-600 to-pink-500 rounded-2xl flex items-center justify-center text-white text-3xl mx-auto mb-3 shadow-xl shadow-indigo-500/30">
+                <i class="fa-solid fa-location-crosshairs"></i>
+            </div>
+
+            <h2 class="text-xl font-extrabold text-white mb-1 tracking-wide">Transmitir GPS al Grupo</h2>
+            <p class="text-xs text-slate-300 mb-4 leading-relaxed">
+                Código de sala: <strong id="modalGroupIdLabel" class="text-indigo-400 font-mono font-bold">...</strong>
+            </p>
+
+            <form id="joinForm" onsubmit="handleDeviceRegistration(event)" class="space-y-4 text-left">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1.5">Nombre / Apodo del integrante:</label>
+                    <input type="text" id="joinNameInput" required placeholder="Ej: Lucas, Sofía, Marta..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 font-medium">
+                </div>
+
+                <!-- Live Sync Status Banner on Mobile -->
+                <div id="mobileLiveStatus" class="p-3 bg-slate-950 border border-indigo-500/40 rounded-xl text-xs space-y-1">
+                    <div class="flex items-center justify-between text-indigo-300 font-bold">
+                        <span><i id="syncPulseDot" class="fa-solid fa-signal text-amber-400 mr-1"></i> Transmisión GPS</span>
+                        <span id="mobileSyncCount" class="text-[10px] bg-indigo-900/60 px-2 py-0.5 rounded text-indigo-200">0 envíos</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400" id="mobileLastSyncTime">Escribe tu nombre para empezar a transmitir...</p>
+                </div>
+
+                <button type="submit" id="grantPermissionBtn" class="w-full py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-extrabold text-sm rounded-xl shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 transition transform active:scale-95">
+                    <i class="fa-solid fa-location-dot"></i>
+                    <span>¡Activar y Transmitir GPS Ya!</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- SHARE & AUTHORIZATION MODAL WITH DYNAMIC QR CODE -->
+    <div id="shareModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+            
+            <button onclick="closeShareModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="text-center mb-4">
+                <div class="w-12 h-12 bg-indigo-600/20 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-indigo-500/30">
+                    <i class="fa-solid fa-qrcode text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-extrabold text-white">Vincular Teléfono Integrante</h3>
+                <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                    Escanea el código QR con la cámara del móvil a rastrear.
+                </p>
+            </div>
+
+            <!-- Dynamic QR Canvas Container -->
+            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 mb-4 flex flex-col items-center gap-2">
+                <div id="qrcode" class="bg-white p-2.5 rounded-2xl shadow-xl min-w-[150px] min-h-[150px] flex items-center justify-center"></div>
+                <p class="text-xs text-indigo-300 font-medium">
+                    <i class="fa-solid fa-camera mr-1"></i> Apunta con la cámara del otro teléfono
+                </p>
+            </div>
+
+            <div class="space-y-3">
+                <!-- Group Code Callout -->
+                <div class="p-3 bg-slate-950 border border-indigo-500/30 rounded-xl flex items-center justify-between">
+                    <div>
+                        <span class="text-[10px] text-slate-400 uppercase font-bold block">Código de Sala Corto:</span>
+                        <strong id="modalGroupCodeText" class="text-indigo-400 font-mono text-base font-extrabold tracking-wider">...</strong>
+                    </div>
+                    <button onclick="promptManualGroupCode()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700">
+                        Cambiar Código
+                    </button>
+                </div>
+
+                <div>
+                    <label class="text-xs font-semibold text-slate-400 mb-1 block">O copia el enlace directo:</label>
+                    <div class="flex items-center gap-2">
+                        <input id="groupCodeInput" readonly value="" class="bg-slate-950 border border-slate-800 text-indigo-400 font-mono text-xs text-center rounded-xl p-3 flex-1 select-all font-semibold">
+                        <button onclick="copyGroupLink()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-3 rounded-xl transition flex items-center gap-1.5 active:scale-95 shadow-md">
+                            <i class="fa-solid fa-copy"></i>
+                            <span>Copiar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        let activeGroupId = urlParams.get('groupId');
+        if (!activeGroupId) {
+            activeGroupId = localStorage.getItem('concert_group_id');
+            if (!activeGroupId) {
+                activeGroupId = 'SAFE-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+                localStorage.setItem('concert_group_id', activeGroupId);
+            }
+        } else {
+            activeGroupId = activeGroupId.toUpperCase();
+            localStorage.setItem('concert_group_id', activeGroupId);
+        }
+
+        let appId = urlParams.get('appId') || (typeof __app_id !== 'undefined' ? __app_id : 'concert-safeguard-real');
+        localStorage.setItem('concert_app_id', appId);
+
+        // UI Label Injections
+        document.getElementById('currentGroupIdDisplay').innerText = activeGroupId;
+        document.getElementById('groupCodeBadgeInline').innerText = activeGroupId;
+        document.getElementById('modalGroupCodeText').innerText = activeGroupId;
+        document.getElementById('modalGroupIdLabel').innerText = activeGroupId;
+
+        let app = null;
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+        let mqttClient = null;
+
+        let myDeviceId = localStorage.getItem('concert_device_id');
+        if (!myDeviceId) {
+            myDeviceId = 'dev_' + Math.random().toString(36).substring(2, 9);
+            localStorage.setItem('concert_device_id', myDeviceId);
+        }
+
+        let myRegisteredName = localStorage.getItem('concert_my_name') || '';
+        let gpsSyncCounter = 0;
+        let currentPosCache = null;
+
+        let hostWatchId = null;
+        let safeRadiusMeters = 50;
+        let map = null;
+        let parentMarker = null;
+        let radiusCircle = null;
+        let parentPosition = { lat: 41.3634, lng: 2.1526 };
+        let groupMembersMap = new Map();
+        let groupMembers = [];
+        let memberMarkers = {};
+        let removedMemberIds = new Set();
+        
+        let isAudioAlarmEnabled = true;
+        let alarmOscillator = null;
+        let audioContext = null;
+        let wakeLock = null;
+
+        // AR State variables
+        let arVideoStream = null;
+        let arAnimationFrame = null;
+        let deviceHeading = 0; // Compass angle 0 to 360
+        let currentOutfitBase64 = null;
+
+        const MQTT_BROKERS = [
+            'wss://broker.emqx.io:8084/mqtt',
+            'wss://broker.hivemq.com:8884/mqtt',
+            'wss://test.mosquitto.org:8081/mqtt'
+        ];
+        let currentBrokerIndex = 0;
+
+        // GEMINI API UTILITY FUNCTIONS
+        async function callGeminiApi(promptText, systemInstructionText = "Eres el asistente de seguridad IA de ConcertSafe Guard.") {
+            const apiKey = ""; // Canvas runtime environment automatically supplies key when empty
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: promptText }] }],
+                systemInstruction: { parts: [{ text: systemInstructionText }] }
+            };
+
+            let attempts = 0;
+            while (attempts < 3) {
+                try {
+                    const res = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (txt) return txt;
+                    throw new Error("No text returned");
+                } catch (e) {
+                    attempts++;
+                    if (attempts >= 3) throw e;
+                    await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempts)));
+                }
+            }
+        }
+
+        async function callGeminiVisionApi(promptText, base64Data, mimeType = "image/jpeg") {
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{
+                    role: "user",
+                    parts: [
+                        { text: promptText },
+                        { inlineData: { mimeType: mimeType, data: base64Data } }
+                    ]
+                }]
+            };
+
+            let attempts = 0;
+            while (attempts < 3) {
+                try {
+                    const res = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (txt) return txt;
+                    throw new Error("No vision text returned");
+                } catch (e) {
+                    attempts++;
+                    if (attempts >= 3) throw e;
+                    await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempts)));
+                }
+            }
+        }
+
+        async function callGeminiTtsApi(speechText) {
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{
+                    parts: [{ text: `Di con voz alta, clara y autoritaria de seguridad: ${speechText}` }]
+                }],
+                generationConfig: {
+                    responseModalities: ["AUDIO"],
+                    speechConfig: {
+                        voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" } }
+                    }
+                }
+            };
+
+            try {
+                const res = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                const part = result?.candidates?.[0]?.content?.parts?.[0];
+                const audioData = part?.inlineData?.data;
+                const mimeType = part?.inlineData?.mimeType || '';
+
+                if (audioData) {
+                    let sampleRate = 24000;
+                    const match = mimeType.match(/rate=(\d+)/);
+                    if (match && match[1]) sampleRate = parseInt(match[1], 10);
+
+                    const pcmBuffer = base64ToArrayBuffer(audioData);
+                    const pcm16 = new Int16Array(pcmBuffer);
+                    const wavBlob = pcmToWav(pcm16, sampleRate);
+                    const audioUrl = URL.createObjectURL(wavBlob);
+                    const audio = new Audio(audioUrl);
+                    audio.play();
+                }
+            } catch(e) {
+                console.warn("TTS fallback speech info:", e);
+                if ('speechSynthesis' in window) {
+                    const utter = new SpeechSynthesisUtterance(speechText);
+                    utter.lang = 'es-ES';
+                    window.speechSynthesis.speak(utter);
+                }
+            }
+        }
+
+        function base64ToArrayBuffer(base64) {
+            const binaryString = atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        function pcmToWav(pcm16, sampleRate) {
+            const numChannels = 1;
+            const byteRate = sampleRate * numChannels * 2;
+            const blockAlign = numChannels * 2;
+            const dataSize = pcm16.length * 2;
+            const buffer = new ArrayBuffer(44 + dataSize);
+            const view = new DataView(buffer);
+
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + dataSize, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, 16, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, dataSize, true);
+
+            let offset = 44;
+            for (let i = 0; i < pcm16.length; i++, offset += 2) {
+                view.setInt16(offset, pcm16[i], true);
+            }
+
+            return new Blob([buffer], { type: 'audio/wav' });
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        window.openAiAssistantModal = function() {
+            document.getElementById('aiAssistantModal').classList.remove('hidden');
+        };
+
+        window.closeAiAssistantModal = function() {
+            document.getElementById('aiAssistantModal').classList.add('hidden');
+        };
+
+        window.sendQuickAiPrompt = function(promptText) {
+            document.getElementById('aiChatInput').value = promptText;
+            handleAiChatSubmit(new Event('submit'));
+        };
+
+        window.handleAiChatSubmit = async function(e) {
+            if (e) e.preventDefault();
+            const input = document.getElementById('aiChatInput');
+            const prompt = input.value.trim();
+            if (!prompt) return;
+
+            appendAiChatMessage("user", prompt);
+            input.value = '';
+
+            const loading = document.getElementById('aiLoadingIndicator');
+            loading.classList.remove('hidden');
+
+            try {
+                const sysPrompt = `Eres el asistente oficial de seguridad de la app ConcertSafe Guard. Responde de forma muy concisa, estructurada y calmada. Da pasos accionables. Si detectas un caso grave de desaparición o desorientación, incluye un texto corto que puedan mostrar al personal de seguridad.`;
+                const reply = await callGeminiApi(prompt, sysPrompt);
+                appendAiChatMessage("assistant", reply);
+            } catch (err) {
+                appendAiChatMessage("assistant", "⚠️ Ocurrió un error al consultar la IA. Verifica tu conexión a internet.");
+            } finally {
+                loading.classList.add('hidden');
+            }
+        };
+
+        function appendAiChatMessage(sender, text) {
+            const container = document.getElementById('aiChatMessages');
+            const msgDiv = document.createElement('div');
+
+            if (sender === "user") {
+                msgDiv.className = "flex items-start justify-end gap-2 text-right";
+                msgDiv.innerHTML = `
+                    <div class="bg-purple-600 text-white p-3 rounded-2xl max-w-[85%] font-medium">
+                        ${text}
+                    </div>
+                `;
+            } else {
+                msgDiv.className = "flex items-start gap-2.5 bg-slate-900 p-3 rounded-2xl border border-slate-800";
+                msgDiv.innerHTML = `
+                    <div class="w-7 h-7 rounded-xl bg-purple-600/30 text-purple-300 flex items-center justify-center flex-shrink-0 text-xs">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="space-y-2 text-slate-200 leading-relaxed max-w-[90%]">
+                        <p class="whitespace-pre-wrap">${text}</p>
+                        <button onclick="speakAiText(this)" data-text="${text.replace(/"/g, '&quot;')}" class="text-[10px] bg-purple-950 text-purple-300 border border-purple-500/40 px-2 py-1 rounded font-bold hover:bg-purple-900 transition flex items-center gap-1">
+                            <i class="fa-solid fa-volume-high"></i> Escuchar Alerta Hablada IA
+                        </button>
+                    </div>
+                `;
+            }
+            container.appendChild(msgDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        window.speakAiText = function(btn) {
+            const txt = btn.getAttribute('data-text');
+            if (txt) callGeminiTtsApi(txt);
+        };
+
+        window.generateEmergencyAiPlan = async function() {
+            openAiAssistantModal();
+
+            const breached = groupMembers.filter(m => calculateDistance(parentPosition.lat, parentPosition.lng, m.lat, m.lng) > safeRadiusMeters || m.sos);
+            const telemetrySummary = breached.map(m => {
+                const d = Math.round(calculateDistance(parentPosition.lat, parentPosition.lng, m.lat, m.lng));
+                return `- ${m.name}: a ${d} metros de distancia. Batería: ${m.battery}%. Estado SOS: ${m.sos ? 'ACTIVADO' : 'Inactivo'}.`;
+            }).join('\n');
+
+            const query = `EMERGENCIA CONCERTSAFE DETECTADA:\nDatos de telemetría en tiempo real:\n${telemetrySummary || 'Un integrante ha superado la distancia límite.'}\nGenera inmediatamente un Plan de Rescate y Búsqueda en 3 pasos clave para el adulto/líder del grupo y redacta un borrador de mensaje para seguridad del evento.`;
+
+            appendAiChatMessage("user", "🚨 ¡Genera un Plan de Acción IA urgente con la telemetría actual!");
+            const loading = document.getElementById('aiLoadingIndicator');
+            loading.classList.remove('hidden');
+
+            try {
+                const planText = await callGeminiApi(query, "Eres un experto en seguridad de multitudes y eventos masivos. Ofrece respuestas ejecutivas ultra directas y de máximo valor táctico.");
+                appendAiChatMessage("assistant", planText);
+                callGeminiTtsApi("Atención: Plan de emergencia generado por Inteligencia Artificial. Revisa las instrucciones en pantalla.");
+            } catch(e) {
+                appendAiChatMessage("assistant", "⚠️ No se pudo procesar la telemetría en la IA.");
+            } finally {
+                loading.classList.add('hidden');
+            }
+        };
+
+        window.openAiOutfitScannerModal = function() {
+            document.getElementById('aiOutfitScannerModal').classList.remove('hidden');
+        };
+
+        window.previewOutfitPhoto = function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const img = document.getElementById('outfitPreviewImg');
+                img.src = evt.target.result;
+                img.classList.remove('hidden');
+
+                // Extract Base64 string
+                currentOutfitBase64 = evt.target.result.split(',')[1];
+                document.getElementById('analyzeOutfitBtn').disabled = false;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.processOutfitPhoto = async function() {
+            if (!currentOutfitBase64) return;
+
+            const btn = document.getElementById('analyzeOutfitBtn');
+            const resultBox = document.getElementById('outfitAnalysisResult');
+            const resultText = document.getElementById('outfitDossierText');
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Analizando ropa e indumentaria...`;
+
+            const prompt = `Analiza detalladamente la vestimenta de la persona en la foto para crear una Ficha Técnica de Búsqueda Rápida en caso de extravío en un concierto. Describe brevemente: 1) Colores principales de la ropa, 2) Tipo de prenda superior e inferior, 3) Calzado y accesorios visibles, 4) Marcas o rasgos distintivos evidentes. Formato claro tipo viñetas.`;
+
+            try {
+                const analysis = await callGeminiVisionApi(prompt, currentOutfitBase64);
+                resultText.innerText = `FICHA DE IDENTIFICACIÓN CONCERTSAFE\nFecha: ${new Date().toLocaleDateString()} - ${new Date().toLocaleTimeString()}\nSala: ${activeGroupId}\n\n${analysis}`;
+                resultBox.classList.remove('hidden');
+                showToastNotification("Ficha de vestimenta IA creada con éxito.");
+            } catch (err) {
+                resultText.innerText = "Error al analizar la imagen con IA. Inténtalo con otra foto.";
+                resultBox.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> Analizar Indumentaria con IA Gemini`;
+            }
+        };
+
+        window.copyOutfitDossier = function() {
+            const txt = document.getElementById('outfitDossierText').innerText;
+            const temp = document.createElement('textarea');
+            temp.value = txt;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+            alertModal("📋 Ficha de búsqueda IA copiada al portapapeles.");
+        };
+
+        function updateCloudBadge(isConnected, message) {
+            const badge = document.getElementById('cloudStatusBadge');
+            const dot = document.getElementById('cloudStatusDot');
+            const text = document.getElementById('cloudStatusText');
+            if (badge && text && dot) {
+                if (isConnected) {
+                    badge.className = "text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1";
+                    dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-ping";
+                    text.innerText = message || "Nube Conectada";
+                } else {
+                    badge.className = "text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1";
+                    dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-ping";
+                    text.innerText = message || "Conectando...";
+                }
+            }
+        }
+
+        function initMqttSync() {
+            if (mqttClient) {
+                try { mqttClient.end(true); } catch(e){}
+            }
+
+            const brokerUrl = MQTT_BROKERS[currentBrokerIndex];
+            console.log("Connecting to MQTT broker:", brokerUrl);
+            updateCloudBadge(false, "Conectando...");
+
+            try {
+                mqttClient = mqtt.connect(brokerUrl, {
+                    clientId: 'cs_' + myDeviceId + '_' + Math.random().toString(36).substring(2, 6),
+                    keepalive: 20,
+                    clean: true,
+                    connectTimeout: 5000
+                });
+
+                mqttClient.on('connect', () => {
+                    console.log("MQTT Real-Time Broker Connected to:", brokerUrl);
+                    updateCloudBadge(true, "Nube Conectada");
+
+                    const topic = `concertsafeguard/v2/room_${activeGroupId}`;
+                    mqttClient.subscribe(topic, { qos: 0 });
+
+                    broadcastPing();
+
+                    if (myRegisteredName && currentPosCache) {
+                        broadcastLocationViaMqtt(currentPosCache.lat, currentPosCache.lng);
+                    }
+                });
+
+                mqttClient.on('message', (topic, message) => {
+                    try {
+                        const payload = JSON.parse(message.toString());
+                        if (!payload) return;
+
+                        if (payload.type === 'kick') {
+                            if (payload.targetId) {
+                                removedMemberIds.add(payload.targetId);
+                                groupMembersMap.delete(payload.targetId);
+                                if (memberMarkers[payload.targetId]) {
+                                    map.removeLayer(memberMarkers[payload.targetId]);
+                                    delete memberMarkers[payload.targetId];
+                                }
+                                syncRosterAndMap();
+
+                                if (payload.targetId === myDeviceId) {
+                                    myRegisteredName = '';
+                                    localStorage.removeItem('concert_my_name');
+                                    document.getElementById('mobileActiveBanner').classList.add('hidden');
+                                    showToastNotification("Has sido desvinculado del grupo por el administrador.");
+                                }
+                            }
+                            return;
+                        }
+
+                        if (payload.type === 'join') {
+                            if (payload.id) {
+                                removedMemberIds.delete(payload.id);
+                            }
+                        }
+
+                        if (payload.type === 'ping' && payload.id !== myDeviceId) {
+                            if (currentPosCache) {
+                                broadcastLocationViaMqtt(currentPosCache.lat, currentPosCache.lng);
+                            } else if (!urlParams.get('joinGroup')) {
+                                broadcastLocationViaMqtt(parentPosition.lat, parentPosition.lng);
+                            }
+                            return;
+                        }
+
+                        if (payload.id && payload.lat && payload.lng) {
+                            if (removedMemberIds.has(payload.id)) return;
+                            if (payload.id === myDeviceId && !urlParams.get('joinGroup')) return;
+
+                            const existing = groupMembersMap.get(payload.id);
+                            if (!existing) {
+                                showToastNotification(`📱 ¡Móvil conectado: ${payload.name || 'Integrante'}!`);
+                            }
+
+                            groupMembersMap.set(payload.id, {
+                                id: payload.id,
+                                name: payload.name || 'Dispositivo ' + payload.id.substring(0, 4),
+                                lat: payload.lat,
+                                lng: payload.lng,
+                                battery: payload.battery || 90,
+                                updated: payload.updated || Date.now(),
+                                sos: !!payload.sos,
+                                color: payload.color || '#' + Math.floor(Math.abs(Math.sin(payload.id.charCodeAt(0)) * 16777215)).toString(16).padStart(6, '0')
+                            });
+
+                            syncRosterAndMap();
+                            
+                            if (payload.sos) {
+                                document.getElementById('sosAlertBanner').classList.remove('hidden');
+                            }
+                        }
+                    } catch(e){
+                        console.warn("MQTT Parse error:", e);
+                    }
+                });
+
+                mqttClient.on('error', (err) => {
+                    console.warn("MQTT Broker Error, switching broker...", err);
+                    switchMqttBroker();
+                });
+
+                mqttClient.on('offline', () => {
+                    console.warn("MQTT Offline, trying fallback...");
+                    switchMqttBroker();
+                });
+
+            } catch(e) {
+                console.warn("MQTT init exception:", e);
+                switchMqttBroker();
+            }
+        }
+
+        function switchMqttBroker() {
+            currentBrokerIndex = (currentBrokerIndex + 1) % MQTT_BROKERS.length;
+            setTimeout(initMqttSync, 2000);
+        }
+
+        function broadcastPing() {
+            if (mqttClient && mqttClient.connected) {
+                const topic = `concertsafeguard/v2/room_${activeGroupId}`;
+                mqttClient.publish(topic, JSON.stringify({ type: 'ping', id: myDeviceId }), { qos: 0 });
+            }
+        }
+
+        function broadcastLocationViaMqtt(lat, lng, isSos = false) {
+            if (mqttClient && mqttClient.connected) {
+                const topic = `concertsafeguard/v2/room_${activeGroupId}`;
+                const payload = {
+                    id: myDeviceId,
+                    name: myRegisteredName || 'Dispositivo ' + myDeviceId.substring(4, 8),
+                    lat: lat,
+                    lng: lng,
+                    battery: 95,
+                    updated: Date.now(),
+                    sos: isSos,
+                    color: '#6366f1'
+                };
+                mqttClient.publish(topic, JSON.stringify(payload), { qos: 0 });
+            }
+        }
+
+        function syncRosterAndMap() {
+            groupMembers = Array.from(groupMembersMap.values());
+            renderRoster();
+            updateMapMarkers();
+            checkGeofenceAlerts();
+        }
+
+        function initLeafletMap() {
+            if (map) {
+                map.remove();
+                map = null;
+            }
+
+            map = L.map('map', { zoomControl: false }).setView([parentPosition.lat, parentPosition.lng], 18);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap &copy; CARTO',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+
+            L.control.zoom({ position: 'bottomleft' }).addTo(map);
+
+            const parentIcon = L.divIcon({
+                className: 'custom-parent-icon',
+                html: `<div class="w-9 h-9 rounded-full bg-indigo-600 border-2 border-white pulse-marker-parent flex items-center justify-center text-white text-xs font-bold shadow-2xl">
+                        <i class="fa-solid fa-user-shield"></i>
+                       </div>`,
+                iconSize: [36, 36],
+                iconAnchor: [18, 18]
+            });
+
+            parentMarker = L.marker([parentPosition.lat, parentPosition.lng], { icon: parentIcon }).addTo(map);
+            parentMarker.bindPopup("<b>Mi Posición GPS (Líder)</b><br>Centro del perímetro seguro");
+
+            radiusCircle = L.circle([parentPosition.lat, parentPosition.lng], {
+                color: '#6366f1',
+                fillColor: '#818cf8',
+                fillOpacity: 0.15,
+                weight: 2,
+                dashArray: '6, 6',
+                radius: safeRadiusMeters
+            }).addTo(map);
+        }
+
+        function createOrUpdateMemberMarker(member) {
+            const dist = calculateDistance(parentPosition.lat, parentPosition.lng, member.lat, member.lng);
+            const isOutside = dist > safeRadiusMeters;
+
+            const pulseClass = member.sos ? 'pulse-marker-sos' : (isOutside ? 'pulse-marker-danger' : '');
+            const bgClass = member.sos ? 'bg-amber-500' : (isOutside ? 'bg-rose-600' : 'bg-slate-900');
+
+            const iconHtml = `
+                <div class="relative group">
+                    <div class="w-8 h-8 rounded-full ${bgClass} ${pulseClass} border-2 flex items-center justify-center text-white text-xs font-black shadow-xl" style="border-color: ${member.color}">
+                        ${member.sos ? '<i class="fa-solid fa-hand text-xs text-slate-950"></i>' : member.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div class="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-slate-950/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-md border border-slate-700 whitespace-nowrap shadow-lg">
+                        ${member.name.split(' ')[0]} (${Math.round(dist)}m)
+                    </div>
+                </div>
+            `;
+
+            const customIcon = L.divIcon({
+                className: 'custom-member-icon',
+                html: iconHtml,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            });
+
+            const elapsedSecs = Math.max(0, Math.floor((Date.now() - member.updated) / 1000));
+            const timeAgoStr = elapsedSecs < 10 ? 'Ahora mismo' : `Hace ${elapsedSecs}s`;
+
+            if (memberMarkers[member.id]) {
+                memberMarkers[member.id].setLatLng([member.lat, member.lng]);
+                memberMarkers[member.id].setIcon(customIcon);
+            } else {
+                const marker = L.marker([member.lat, member.lng], { icon: customIcon }).addTo(map);
+                marker.bindPopup(`
+                    <div class="p-1 font-sans">
+                        <strong style="color:${member.color}">${member.name}</strong><br>
+                        Distancia: <b>${Math.round(dist)} m</b><br>
+                        Batería: <b>${member.battery}%</b><br>
+                        Transmisión: <b>${timeAgoStr}</b>
+                    </div>
+                `);
+                memberMarkers[member.id] = marker;
+            }
+        }
+
+        function updateMapMarkers() {
+            groupMembers.forEach(m => createOrUpdateMemberMarker(m));
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const φ1 = lat1 * Math.PI/180;
+            const φ2 = lat2 * Math.PI/180;
+            const Δφ = (lat2-lat1) * Math.PI/180;
+            const Δλ = (lon2-lon1) * Math.PI/180;
+
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+            return R * c;
+        }
+
+        function calculateBearing(lat1, lon1, lat2, lon2) {
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+            const y = Math.sin(Δλ) * Math.cos(φ2);
+            const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+            const θ = Math.atan2(y, x);
+            return (θ * 180 / Math.PI + 360) % 360;
+        }
+
+        window.toggleMapFullscreen = function() {
+            const mapBox = document.getElementById('mapContainer');
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (mapBox.requestFullscreen) {
+                    mapBox.requestFullscreen();
+                } else if (mapBox.webkitRequestFullscreen) {
+                    mapBox.webkitRequestFullscreen();
+                }
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(() => {});
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+            }
+        };
+
+        function handleFullscreenChange() {
+            const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
+            const icon = document.getElementById('fullscreenIcon');
+
+            if (isFullscreen) {
+                if (icon) icon.className = "fa-solid fa-compress text-indigo-400 text-xs sm:text-sm";
+            } else {
+                if (icon) icon.className = "fa-solid fa-expand text-indigo-400 text-xs sm:text-sm";
+                if (screen.orientation && screen.orientation.unlock) {
+                    try { screen.orientation.unlock(); } catch(e){}
+                }
+            }
+
+            setTimeout(() => {
+                if (map) {
+                    map.invalidateSize();
+                }
+            }, 200);
+        }
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+        function initOrientationSensor() {
+            if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', (e) => {
+                    if (e.webkitCompassHeading) {
+                        deviceHeading = e.webkitCompassHeading;
+                    } else if (e.alpha !== null) {
+                        deviceHeading = (360 - e.alpha) % 360;
+                    }
+                    const headingText = document.getElementById('arHeadingText');
+                    if (headingText) {
+                        headingText.innerText = `Rumbo: ${Math.round(deviceHeading)}° | Brújula Activa`;
+                    }
+                }, true);
+            }
+        }
+
+        window.openARView = async function() {
+            const modal = document.getElementById('arCameraModal');
+            const video = document.getElementById('arVideo');
+
+            modal.classList.remove('hidden');
+
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission === 'granted') {
+                        initOrientationSensor();
+                    }
+                } catch (e) {}
+            } else {
+                initOrientationSensor();
+            }
+
+            try {
+                arVideoStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: "environment" } },
+                    audio: false
+                });
+                video.srcObject = arVideoStream;
+            } catch (err) {
+                console.warn("Camera fallback triggered:", err);
+                try {
+                    arVideoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                    video.srcObject = arVideoStream;
+                } catch (fallbackErr) {
+                    alertModal("No se pudo acceder a la cámara. Verifica los permisos del navegador.");
+                }
+            }
+
+            startARLoop();
+        };
+
+        window.closeARView = function() {
+            const modal = document.getElementById('arCameraModal');
+            modal.classList.add('hidden');
+
+            if (arVideoStream) {
+                arVideoStream.getTracks().forEach(track => track.stop());
+                arVideoStream = null;
+            }
+
+            if (arAnimationFrame) {
+                cancelAnimationFrame(arAnimationFrame);
+                arAnimationFrame = null;
+            }
+        };
+
+        function startARLoop() {
+            function updateAROverlay() {
+                const container = document.getElementById('arBadgesContainer');
+                const dotsContainer = document.getElementById('radarMemberDots');
+                const indicator = document.getElementById('radarCompassIndicator');
+
+                if (!container) return;
+
+                container.innerHTML = '';
+                if (dotsContainer) dotsContainer.innerHTML = '';
+
+                if (indicator) {
+                    const leftPct = (deviceHeading / 360) * 100;
+                    indicator.style.left = `${leftPct}%`;
+                }
+
+                if (groupMembers.length === 0) {
+                    container.innerHTML = `
+                        <div class="absolute inset-0 flex items-center justify-center p-6 text-center">
+                            <div class="bg-slate-950/80 backdrop-blur border border-slate-800 p-5 rounded-2xl max-w-xs shadow-2xl">
+                                <i class="fa-solid fa-mobile-screen text-indigo-400 text-3xl mb-2"></i>
+                                <p class="text-xs text-slate-200 font-bold mb-1">No hay móviles vinculados en este momento</p>
+                                <p class="text-[11px] text-slate-400">Escanea el código QR desde otro teléfono para ver la posición superpuesta en la cámara.</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    const FOV = 60; // Horizontal field of view in degrees
+
+                    groupMembers.forEach(m => {
+                        const dist = Math.round(calculateDistance(parentPosition.lat, parentPosition.lng, m.lat, m.lng));
+                        const bearing = calculateBearing(parentPosition.lat, parentPosition.lng, m.lat, m.lng);
+                        const isOutside = dist > safeRadiusMeters;
+
+                        let diffAngle = (bearing - deviceHeading + 540) % 360 - 180;
+
+                        if (dotsContainer) {
+                            const dotLeftPct = (bearing / 360) * 100;
+                            const dot = document.createElement('div');
+                            dot.className = `absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-slate-950 shadow-lg ${
+                                m.sos ? 'bg-amber-400 animate-ping' : (isOutside ? 'bg-rose-500' : 'bg-emerald-400')
+                            }`;
+                            dot.style.left = `${dotLeftPct}%`;
+                            dot.title = `${m.name}: ${dist}m`;
+                            dotsContainer.appendChild(dot);
+                        }
+
+                        const inFOV = Math.abs(diffAngle) <= FOV / 2;
+                        let screenX = 50 + (diffAngle / (FOV / 2)) * 50;
+                        screenX = Math.max(8, Math.min(92, screenX));
+
+                        const clampedDist = Math.min(200, Math.max(5, dist));
+                        const screenY = 25 + (1 - (clampedDist / 200)) * 45; 
+
+                        const badge = document.createElement('div');
+                        badge.className = "absolute -translate-x-1/2 -translate-y-1/2 ar-badge pointer-events-auto cursor-pointer";
+                        badge.style.left = `${screenX}%`;
+                        badge.style.top = `${screenY}%`;
+
+                        const borderBg = m.sos ? 'bg-amber-500 border-amber-300 text-slate-950 shadow-amber-500/50' : (
+                            isOutside ? 'bg-rose-950/90 border-rose-500 text-white shadow-rose-600/50' : 'bg-slate-950/90 border-emerald-400 text-white shadow-emerald-500/30'
+                        );
+
+                        const arrowIndicator = !inFOV ? (
+                            diffAngle < 0 
+                            ? `<span class="bg-indigo-600 text-white px-2 py-1 rounded-l-xl font-bold text-[10px] flex items-center"><i class="fa-solid fa-arrow-left mr-1"></i> GIRAR IZQ</span>`
+                            : `<span class="bg-indigo-600 text-white px-2 py-1 rounded-r-xl font-bold text-[10px] flex items-center">GIRAR DER <i class="fa-solid fa-arrow-right ml-1"></i></span>`
+                        ) : '';
+
+                        badge.innerHTML = `
+                            <div class="flex items-center gap-1.5 ${borderBg} backdrop-blur border-2 px-3 py-2 rounded-2xl shadow-2xl transition hover:scale-110">
+                                ${arrowIndicator}
+                                <div class="w-7 h-7 rounded-full flex items-center justify-center font-black text-white text-xs border border-white/40" style="background-color: ${m.color}">
+                                    ${m.sos ? '<i class="fa-solid fa-hand text-amber-300"></i>' : m.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div class="text-left leading-tight">
+                                    <p class="font-extrabold text-xs flex items-center gap-1">
+                                        <span>${m.name}</span>
+                                        ${m.sos ? '<span class="bg-amber-400 text-slate-950 text-[9px] px-1 rounded font-black">SOS</span>' : ''}
+                                    </p>
+                                    <p class="text-[11px] font-mono font-bold ${isOutside ? 'text-rose-300' : 'text-emerald-300'}">
+                                        📍 ${dist}m ${isOutside ? '⚠️ ¡FUERA!' : '✓'}
+                                    </p>
+                                </div>
+                            </div>
+                        `;
+
+                        container.appendChild(badge);
+                    });
+                }
+
+                arAnimationFrame = requestAnimationFrame(updateAROverlay);
+            }
+
+            arAnimationFrame = requestAnimationFrame(updateAROverlay);
+        }
+
+        function playSirenSound() {
+            if (!isAudioAlarmEnabled) return;
+            try {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+
+                if (alarmOscillator) return;
+
+                alarmOscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                alarmOscillator.type = 'sawtooth';
+                alarmOscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+
+                let high = true;
+                const interval = setInterval(() => {
+                    if (!alarmOscillator) {
+                        clearInterval(interval);
+                        return;
+                    }
+                    alarmOscillator.frequency.setValueAtTime(high ? 600 : 1100, audioContext.currentTime);
+                    high = !high;
+                }, 300);
+
+                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+
+                alarmOscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                alarmOscillator.start();
+            } catch(e){}
+        }
+
+        function stopSirenSound() {
+            if (alarmOscillator) {
+                try {
+                    alarmOscillator.stop();
+                    alarmOscillator.disconnect();
+                } catch(e){}
+                alarmOscillator = null;
+            }
+        }
+
+        function checkGeofenceAlerts() {
+            let breachedMembers = [];
+
+            groupMembers.forEach(m => {
+                const dist = calculateDistance(parentPosition.lat, parentPosition.lng, m.lat, m.lng);
+                if (dist > safeRadiusMeters) {
+                    breachedMembers.push({ member: m, dist: Math.round(dist) });
+                }
+            });
+
+            const alertBanner = document.getElementById('perimeterAlertBanner');
+            const insideCountBadge = document.getElementById('insideCountBadge');
+            const statusCircle = document.getElementById('statusCircle');
+
+            insideCountBadge.innerText = `${groupMembers.length} Móviles Conectados`;
+
+            if (breachedMembers.length > 0) {
+                alertBanner.classList.remove('hidden');
+                statusCircle.className = "w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping";
+
+                const namesStr = breachedMembers.map(b => `${b.member.name} (${b.dist}m)`).join(', ');
+                document.getElementById('alertBannerTitle').innerText = `¡ALERTA DE PERÍMETRO (${breachedMembers.length})!`;
+                document.getElementById('alertBannerDetail').innerText = `Fuera de rango: ${namesStr}. Límite configurado: ${safeRadiusMeters}m.`;
+
+                radiusCircle.setStyle({ color: '#ef4444', fillColor: '#f87171' });
+                playSirenSound();
+            } else {
+                alertBanner.classList.add('hidden');
+                statusCircle.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
+                radiusCircle.setStyle({ color: '#6366f1', fillColor: '#818cf8' });
+                stopSirenSound();
+            }
+        }
+
+        function renderRoster() {
+            const container = document.getElementById('membersContainer');
+            const countText = document.getElementById('membersCountText');
+            if (countText) countText.innerText = groupMembers.length;
+
+            container.innerHTML = '';
+
+            if (groupMembers.length === 0) {
+                container.innerHTML = `
+                    <div class="p-6 text-center border border-dashed border-slate-800 rounded-2xl bg-slate-900/50">
+                        <div class="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-500 mx-auto mb-3">
+                            <i class="fa-solid fa-mobile-screen-button text-2xl"></i>
+                        </div>
+                        <p class="text-xs text-slate-300 font-bold mb-1">Esperando señal de móviles en sala ${activeGroupId}</p>
+                        <p class="text-[11px] text-slate-500 mb-4 leading-relaxed">Abre la cámara del otro teléfono y escanea el QR para vincularlo.</p>
+                        <div class="flex gap-2 justify-center">
+                            <button onclick="openScanToLocateModal()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-bold transition shadow-lg shadow-indigo-600/30">
+                                <i class="fa-solid fa-qrcode mr-1"></i> Ver Código QR
+                            </button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            groupMembers.forEach(m => {
+                const dist = Math.round(calculateDistance(parentPosition.lat, parentPosition.lng, m.lat, m.lng));
+                const isOutside = dist > safeRadiusMeters;
+                const elapsedSecs = Math.max(0, Math.floor((Date.now() - (m.updated || Date.now())) / 1000));
+
+                const card = document.createElement('div');
+                card.className = `p-3.5 rounded-2xl border transition shadow-sm relative group ${
+                    m.sos
+                    ? 'bg-amber-950/40 border-amber-500/70 shadow-amber-900/20'
+                    : (isOutside 
+                        ? 'bg-rose-950/40 border-rose-600/60 shadow-rose-900/20' 
+                        : 'bg-slate-900 border-slate-800 hover:border-slate-700')
+                }`;
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center font-black text-white shadow-md relative" style="background-color: ${m.color}">
+                                ${m.sos ? '<i class="fa-solid fa-hand text-amber-300 text-lg"></i>' : m.name.charAt(0).toUpperCase()}
+                                <span class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 border-2 border-slate-900"></span>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-sm text-slate-100 flex items-center gap-1.5">
+                                    ${m.name}
+                                    ${m.sos ? '<span class="text-[10px] bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded font-black">SOS</span>' : ''}
+                                </h3>
+                                <div class="flex items-center gap-3 text-xs text-slate-400 mt-0.5">
+                                    <span><i class="fa-solid fa-battery-${m.battery > 70 ? 'full text-emerald-400' : m.battery > 30 ? 'half text-amber-400' : 'empty text-rose-400'} mr-1"></i>${m.battery}%</span>
+                                    <span><i class="fa-solid fa-satellite text-indigo-400 mr-1"></i>En Vivo</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-right flex items-center gap-2">
+                            <div>
+                                <div class="text-sm font-black ${isOutside ? 'text-rose-400 animate-pulse' : 'text-emerald-400'}">
+                                    ${dist} m
+                                </div>
+                                <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${
+                                    isOutside ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-emerald-500/20 text-emerald-300'
+                                }">
+                                    ${isOutside ? '¡FUERA!' : 'Segura'}
+                                </span>
+                            </div>
+
+                            <button onclick="removeMember('${m.id}', '${m.name.replace(/'/g, "\\'")}')" title="Desvincular miembro" class="ml-1 p-2 rounded-xl bg-slate-800 hover:bg-rose-600/30 text-slate-400 hover:text-rose-400 border border-slate-700 hover:border-rose-500/40 transition">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+                        <span class="text-[11px]"><i class="fa-solid fa-clock text-emerald-400 mr-1"></i>${elapsedSecs < 10 ? 'Sincronizado' : `Hace ${elapsedSecs}s`}</span>
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="openARView()" class="px-2.5 py-1 rounded-lg bg-emerald-950 hover:bg-emerald-900 border border-emerald-800/50 text-emerald-300 text-[11px] font-semibold transition">
+                                <i class="fa-solid fa-camera mr-1"></i>Ver en Cámara
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        const authReadyPromise = new Promise((resolve) => {
+            try {
+                let firebaseConfig = null;
+                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                    firebaseConfig = JSON.parse(__firebase_config);
+                } else {
+                    firebaseConfig = { apiKey: "demo", authDomain: "demo.firebaseapp.com", projectId: "demo" };
+                }
+
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                signInAnonymously(auth).then(res => {
+                    currentUser = res.user;
+                    resolve(currentUser);
+                }).catch(() => resolve(null));
+
+                onAuthStateChanged(auth, (u) => { if (u) currentUser = u; });
+            } catch(e) {
+                resolve(null);
+            }
+        });
+
+        window.addEventListener('load', async () => {
+            initLeafletMap();
+            startHostGpsTracking();
+            initMqttSync();
+            
+            await authReadyPromise;
+
+            if (db) {
+                try {
+                    const positionsCol = collection(db, 'artifacts', appId, 'public', 'data', `positions_${activeGroupId}`);
+                    onSnapshot(positionsCol, (snapshot) => {
+                        snapshot.forEach((docSnap) => {
+                            const data = docSnap.data();
+                            if (removedMemberIds.has(docSnap.id)) return;
+                            if (docSnap.id === myDeviceId && !urlParams.get('joinGroup')) return;
+
+                            if (data && data.lat && data.lng) {
+                                groupMembersMap.set(docSnap.id, {
+                                    id: docSnap.id,
+                                    name: data.name || 'Dispositivo ' + docSnap.id.substring(0, 4),
+                                    lat: data.lat,
+                                    lng: data.lng,
+                                    battery: data.battery || 85,
+                                    updated: data.updated || Date.now(),
+                                    sos: !!data.sos,
+                                    color: '#' + Math.floor(Math.abs(Math.sin(docSnap.id.charCodeAt(0)) * 16777215)).toString(16).padStart(6, '0')
+                                });
+                            }
+                        });
+                        syncRosterAndMap();
+                    }, (err) => console.warn("Firestore snapshot info:", err));
+                } catch(e){}
+            }
+
+            if (urlParams.get('joinGroup')) {
+                document.getElementById('joinGroupModal').classList.remove('hidden');
+                document.getElementById('sosWidgetCard').classList.remove('hidden');
+                if (myRegisteredName) {
+                    document.getElementById('joinNameInput').value = myRegisteredName;
+                    document.getElementById('mobileActiveBanner').classList.remove('hidden');
+                    document.getElementById('mobileBannerName').innerText = myRegisteredName;
+                }
+            }
+
+            setInterval(() => {
+                if (myRegisteredName && currentPosCache) {
+                    pushLocationToServer(currentPosCache.lat, currentPosCache.lng);
+                }
+            }, 3000);
+        });
+
+        window.updateGeofenceRadius = function(val) {
+            safeRadiusMeters = parseInt(val);
+            document.getElementById('radiusDisplay').innerText = `${safeRadiusMeters} metros`;
+            if (radiusCircle) {
+                radiusCircle.setRadius(safeRadiusMeters);
+            }
+            checkGeofenceAlerts();
+            renderRoster();
+            updateMapMarkers();
+        };
+
+        window.startHostGpsTracking = function() {
+            if ("geolocation" in navigator) {
+                const onPosUpdate = (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    const acc = Math.round(position.coords.accuracy);
+
+                    const isFirstFix = !currentPosCache;
+                    parentPosition = { lat, lng };
+                    currentPosCache = { lat, lng };
+
+                    if (map && parentMarker && radiusCircle) {
+                        parentMarker.setLatLng([lat, lng]);
+                        radiusCircle.setLatLng([lat, lng]);
+                        if (isFirstFix) {
+                            map.setView([lat, lng], 18);
+                        }
+                    }
+
+                    const accText = document.getElementById('gpsAccuracyText');
+                    if (accText) accText.innerText = `±${acc}m`;
+
+                    if (myRegisteredName) {
+                        pushLocationToServer(lat, lng);
+                    }
+
+                    updateMapMarkers();
+                    checkGeofenceAlerts();
+                    renderRoster();
+                };
+
+                navigator.geolocation.getCurrentPosition(onPosUpdate, (err) => console.warn("GPS Host initial error:", err), {
+                    enableHighAccuracy: true,
+                    maximumAge: 1000,
+                    timeout: 10000
+                });
+
+                if (hostWatchId !== null) {
+                    navigator.geolocation.clearWatch(hostWatchId);
+                }
+
+                hostWatchId = navigator.geolocation.watchPosition(onPosUpdate, (err) => console.warn("GPS Host watch error:", err), {
+                    enableHighAccuracy: true,
+                    maximumAge: 2000,
+                    timeout: 15000
+                });
+            }
+        };
+
+        window.centerOnParent = function() {
+            startHostGpsTracking();
+            map.flyTo([parentPosition.lat, parentPosition.lng], 18);
+            parentMarker.openPopup();
+        };
+
+        window.toggleAudioAlarm = function() {
+            isAudioAlarmEnabled = !isAudioAlarmEnabled;
+            const btnText = document.getElementById('alarmBtnText');
+            const alarmIcon = document.getElementById('alarmIcon');
+
+            if (isAudioAlarmEnabled) {
+                btnText.innerText = "Alarma";
+                alarmIcon.className = "fa-solid fa-bell text-amber-400";
+            } else {
+                btnText.innerText = "Silenciada";
+                alarmIcon.className = "fa-solid fa-bell-slash text-slate-500";
+                stopSirenSound();
+            }
+        };
+
+        window.silenceAlarm = function() {
+            stopSirenSound();
+            document.getElementById('perimeterAlertBanner').classList.add('hidden');
+        };
+
+        window.closeShareModal = function() {
+            document.getElementById('shareModal').classList.add('hidden');
+        };
+
+        window.copyGroupLink = function() {
+            const codeInput = document.getElementById('groupCodeInput');
+            codeInput.select();
+            document.execCommand('copy');
+            alertModal(`✅ Enlace copiado. Código de sala: ${activeGroupId}. Envíaselo por mensaje.`);
+        };
+
+        function alertModal(msg) {
+            const modal = document.createElement('div');
+            modal.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[150] flex items-center justify-center p-4";
+            modal.innerHTML = `
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl max-w-sm w-full text-center shadow-2xl">
+                    <div class="text-indigo-400 text-3xl mb-3"><i class="fa-solid fa-circle-info"></i></div>
+                    <p class="text-sm text-slate-200 mb-5 font-medium leading-relaxed">${msg}</p>
+                    <button onclick="this.closest('.fixed').remove()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-indigo-600/30">Entendido</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function showToastNotification(message) {
+            const toast = document.createElement('div');
+            toast.className = "fixed bottom-5 right-5 z-[200] bg-indigo-600 text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2 border border-indigo-400 animate-bounce";
+            toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-300"></i> ${message}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        function startSilentAudioKeepAlive() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                gain.gain.value = 0.001;
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+            } catch(e) {}
+        }
+
+        async function enableWakeLock() {
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                } catch (err) {}
+            }
+        }
+
+        async function pushLocationToServer(lat, lng, isSos = false) {
+            currentPosCache = { lat, lng };
+
+            broadcastLocationViaMqtt(lat, lng, isSos);
+
+            if (db && currentUser) {
+                try {
+                    const deviceDoc = doc(db, 'artifacts', appId, 'public', 'data', `positions_${activeGroupId}`, myDeviceId);
+                    setDoc(deviceDoc, {
+                        name: myRegisteredName,
+                        lat: lat,
+                        lng: lng,
+                        battery: 92,
+                        updated: Date.now(),
+                        sos: isSos
+                    }, { merge: true }).catch(() => {});
+                } catch (e) {}
+            }
+
+            gpsSyncCounter++;
+            const syncCountLabel = document.getElementById('mobileSyncCount');
+            const lastSyncLabel = document.getElementById('mobileLastSyncTime');
+            const dot = document.getElementById('syncPulseDot');
+
+            if (dot) dot.className = "fa-solid fa-signal text-emerald-400 mr-1 animate-pulse";
+            if (syncCountLabel) syncCountLabel.innerText = `${gpsSyncCounter} envíos OK`;
+            if (lastSyncLabel) {
+                const nowStr = new Date().toLocaleTimeString();
+                lastSyncLabel.innerText = `Transmitiendo a sala ${activeGroupId} (${nowStr})`;
+            }
+        }
+
+        window.handleDeviceRegistration = function(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('joinNameInput').value.trim();
+            if (!nameInput) return;
+
+            myRegisteredName = nameInput;
+            localStorage.setItem('concert_my_name', nameInput);
+
+            removedMemberIds.delete(myDeviceId);
+
+            if (mqttClient && mqttClient.connected) {
+                const topic = `concertsafeguard/v2/room_${activeGroupId}`;
+                mqttClient.publish(topic, JSON.stringify({ type: 'join', id: myDeviceId, name: nameInput }), { qos: 0 });
+            }
+
+            document.getElementById('mobileActiveBanner').classList.remove('hidden');
+            document.getElementById('mobileBannerName').innerText = myRegisteredName;
+
+            const btn = document.getElementById('grantPermissionBtn');
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin mr-1"></i> Obteniendo GPS...`;
+            btn.disabled = true;
+
+            enableWakeLock();
+            startSilentAudioKeepAlive();
+
+            if ("geolocation" in navigator) {
+                let hasResolved = false;
+
+                const onPosSuccess = async (pos) => {
+                    if (hasResolved) return;
+                    hasResolved = true;
+
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    
+                    btn.innerHTML = `<i class="fa-solid fa-check text-white mr-1"></i> ¡GPS Transmitiendo en Vivo!`;
+                    btn.classList.remove('from-indigo-600', 'via-purple-600', 'to-pink-600');
+                    btn.classList.add('bg-emerald-600');
+
+                    await pushLocationToServer(lat, lng);
+
+                    setTimeout(() => {
+                        document.getElementById('joinGroupModal').classList.add('hidden');
+                        btn.disabled = false;
+                        btn.classList.remove('bg-emerald-600');
+                        btn.classList.add('from-indigo-600', 'via-purple-600', 'to-pink-600');
+                        btn.innerHTML = `<i class="fa-solid fa-location-dot"></i> ¡Activar y Transmitir GPS Ya!`;
+                    }, 1000);
+                };
+
+                const onPosError = (err) => {
+                    if (hasResolved) return;
+                    hasResolved = true;
+                    btn.disabled = false;
+                    btn.innerHTML = `<i class="fa-solid fa-location-dot"></i> Reintentar Permiso GPS`;
+                    pushLocationToServer(parentPosition.lat, parentPosition.lng);
+                    document.getElementById('joinGroupModal').classList.add('hidden');
+                    showToastNotification("Transmisión activada con ubicación base.");
+                };
+
+                navigator.geolocation.getCurrentPosition(onPosSuccess, onPosError, { enableHighAccuracy: true, maximumAge: 3000, timeout: 5000 });
+
+                navigator.geolocation.watchPosition(
+                    (pos) => {
+                        onPosSuccess(pos);
+                        pushLocationToServer(pos.coords.latitude, pos.coords.longitude);
+                    },
+                    (err) => console.warn("Watch position info:", err),
+                    { enableHighAccuracy: false, maximumAge: 5000, timeout: 10000 }
+                );
+
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-location-dot"></i> Activar Transmisión GPS`;
+                alertModal("El navegador de este teléfono no soporta geolocalización GPS.");
+            }
+        };
+
+        window.openJoinModalAgain = function() {
+            document.getElementById('joinGroupModal').classList.remove('hidden');
+        };
+
+        window.sendSosSignal = async function() {
+            if (currentPosCache) {
+                await pushLocationToServer(currentPosCache.lat, currentPosCache.lng, true);
+            } else {
+                await pushLocationToServer(parentPosition.lat, parentPosition.lng, true);
+            }
+            alertModal("🚨 ¡Alerta SOS enviada! El grupo ha sido notificado con tu ubicación exacta.");
+        };
+
+        window.dismissSosAlert = async function() {
+            document.getElementById('sosAlertBanner').classList.add('hidden');
+        };
+
+        window.promptManualGroupCode = function() {
+            const newCode = prompt("Introduce el código de sala (Ejemplo: SAFE-8F32):", activeGroupId);
+            if (newCode && newCode.trim().length > 0) {
+                const clean = newCode.trim().toUpperCase();
+                localStorage.setItem('concert_group_id', clean);
+                const currentUrl = new URL(window.location.href);
+                currentUrl.searchParams.set('groupId', clean);
+                window.location.href = currentUrl.href;
+            }
+        };
+
+        window.openScanToLocateModal = function() {
+            const modal = document.getElementById('shareModal');
+            modal.classList.remove('hidden');
+
+            const joinUrl = new URL(window.location.href);
+            joinUrl.searchParams.set('joinGroup', '1');
+            joinUrl.searchParams.set('groupId', activeGroupId);
+
+            document.getElementById('groupCodeInput').value = joinUrl.href;
+
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = '';
+            try {
+                new QRCode(qrContainer, {
+                    text: joinUrl.href,
+                    width: 150,
+                    height: 150,
+                    colorDark: "#0f172a",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            } catch(e) {
+                console.error("QR creation failed:", e);
+            }
+        };
+
+        window.openSafetyTipsModal = function() {
+            document.getElementById('safetyTipsModal').classList.remove('hidden');
+        };
+
+        window.removeMember = function(memberId, name) {
+            removedMemberIds.add(memberId);
+            groupMembersMap.delete(memberId);
+            if (memberMarkers[memberId]) {
+                map.removeLayer(memberMarkers[memberId]);
+                delete memberMarkers[memberId];
+            }
+
+            if (mqttClient && mqttClient.connected) {
+                const topic = `concertsafeguard/v2/room_${activeGroupId}`;
+                mqttClient.publish(topic, JSON.stringify({ type: 'kick', targetId: memberId, id: myDeviceId }), { qos: 0 });
+            }
+
+            if (db && currentUser) {
+                try {
+                    const memberDoc = doc(db, 'artifacts', appId, 'public', 'data', `positions_${activeGroupId}`, memberId);
+                    deleteDoc(memberDoc).catch(()=>{});
+                } catch(e){}
+            }
+
+            syncRosterAndMap();
+            showToastNotification(`Móvil desvinculado: ${name}`);
+        };
+    </script>
+</body>
+</html>        }
+
+        @keyframes pulse-ring {
+            to { box-shadow: 0 0 0 20px rgba(99, 102, 241, 0); }
+        }
+        @keyframes pulse-ring-danger {
+            to { box-shadow: 0 0 0 25px rgba(239, 68, 68, 0); }
+        }
+        @keyframes pulse-ring-sos {
+            to { box-shadow: 0 0 0 30px rgba(245, 158, 11, 0); }
+        }
+
+        /* Custom scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+        /* AR Video & Overlay Styles */
+        #arVideo {
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
+        }
+
+        .ar-hud-grid {
+            background-image: 
+                radial-gradient(circle at center, rgba(99, 102, 241, 0.15) 0%, transparent 70%),
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+        }
+
+        .ar-badge {
+            transition: transform 0.15s ease-out, opacity 0.2s ease;
+            will-change: transform;
+        }
+
+        /* Fullscreen Map styling */
+        #mapContainer:fullscreen,
+        #mapContainer:-webkit-full-screen {
+            width: 100vw !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+            background-color: #0f172a !important;
+        }
+
+        #mapContainer:fullscreen #map,
+        #mapContainer:-webkit-full-screen #map {
+            border-radius: 0 !important;
+            height: 100% !important;
+            min-height: 100% !important;
+        }
+    </style>
+</head>
+<body class="h-full font-sans text-slate-100 bg-slate-950 flex flex-col overflow-x-hidden selection:bg-indigo-500 selection:text-white">
+
+    <header class="bg-slate-900/95 backdrop-blur border-b border-slate-800 sticky top-0 z-50 px-4 py-3 shadow-xl">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-radar text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight tracking-wide text-white flex items-center gap-2">
+                        ConcertSafe Guard
+                        <span id="cloudStatusBadge" class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                            <span id="cloudStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                            <span id="cloudStatusText">Conectando...</span>
+                        </span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Sala: <strong id="currentGroupIdDisplay" class="text-indigo-400 font-mono">Cargando...</strong></p>
+                </div>
+            </div>
+
+            <!-- Header Controls -->
+            <div class="flex items-center gap-2 flex-wrap">
+                <!-- AI Safety Assistant Button -->
+                <button onclick="openAiAssistantModal()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-purple-600/30 transition transform active:scale-95" title="Asistente de Seguridad IA Gemini">
+                    <i class="fa-solid fa-robot text-sm text-purple-200 animate-bounce"></i>
+                    <span>Asistente IA</span>
+                </button>
+
+                <!-- AR Camera Overlay Button -->
+                <button onclick="openARView()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition transform active:scale-95" title="Activar Cámara con Posiciones y Distancias Superpuestas">
+                    <i class="fa-solid fa-camera text-sm animate-pulse"></i>
+                    <span>Cámara RA</span>
+                </button>
+
+                <!-- Manual Join Code Button -->
+                <button onclick="promptManualGroupCode()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition active:scale-95" title="Cambiar o escribir código de sala">
+                    <i class="fa-solid fa-key text-indigo-400"></i>
+                    <span>Código Sala</span>
+                </button>
+
+                <!-- Alarm Toggle -->
+                <button id="alarmToggleBtn" onclick="toggleAudioAlarm()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium flex items-center gap-2 transition active:scale-95" title="Activar/Desactivar Alarma Sonora">
+                    <i id="alarmIcon" class="fa-solid fa-bell text-amber-400"></i>
+                    <span id="alarmBtnText" class="hidden sm:inline">Alarma</span>
+                </button>
+
+                <!-- Scan QR Button -->
+                <button onclick="openScanToLocateModal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition transform active:scale-95">
+                    <i class="fa-solid fa-qrcode text-sm"></i>
+                    <span>Vincular Móvil</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MOBILE TRACKING ACTIVE TOP BANNER -->
+    <div id="mobileActiveBanner" class="hidden bg-gradient-to-r from-indigo-900 via-purple-900 to-pink-900 text-white px-4 py-2.5 border-b border-indigo-500/40 shadow-lg">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 text-xs font-bold">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                <span>📡 TRANSMITIENDO GPS AL GRUPO (<span id="mobileBannerName" class="text-indigo-300">...</span>)</span>
+            </div>
+            <button onclick="openJoinModalAgain()" class="text-[11px] bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-lg font-bold transition">
+                Editar Nombre
+            </button>
+        </div>
+    </div>
+
+    <!-- PERIMETER BREACH ALERT BANNER -->
+    <div id="perimeterAlertBanner" class="hidden bg-rose-600 text-white px-4 py-3 shadow-2xl border-b border-rose-700 animate-bounce transition-all">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-rose-800/80 flex items-center justify-center text-amber-300 text-xl flex-shrink-0 border border-rose-400/40">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <p class="font-extrabold text-sm sm:text-base tracking-wide" id="alertBannerTitle">¡ALERTA DE PERÍMETRO SEGURA!</p>
+                    <p class="text-xs sm:text-sm text-rose-100" id="alertBannerDetail">Un integrante del grupo ha sobrepasado el radio seguro configurado.</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+                <button onclick="generateEmergencyAiPlan()" class="px-3 py-1.5 rounded-xl bg-purple-900 hover:bg-purple-800 text-purple-100 border border-purple-400/40 text-xs font-extrabold transition shadow-md active:scale-95 flex items-center gap-1.5">
+                    <i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i> Plan IA Rescate
+                </button>
+                <button onclick="silenceAlarm()" class="px-3 py-1.5 rounded-xl bg-white text-rose-700 text-xs font-extrabold hover:bg-rose-50 transition shadow-md active:scale-95">
+                    <i class="fa-solid fa-volume-xmark mr-1"></i> Silenciar Alarma
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SOS ALERT BANNER -->
+    <div id="sosAlertBanner" class="hidden bg-amber-500 text-slate-950 px-4 py-3 shadow-2xl border-b border-amber-600 transition-all">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-slate-950 text-amber-400 flex items-center justify-center text-xl flex-shrink-0">
+                    <i class="fa-solid fa-hand text-xl animate-pulse"></i>
+                </div>
+                <div>
+                    <p class="font-extrabold text-sm sm:text-base tracking-wide" id="sosBannerTitle">¡ALERTA SOS DE AUXILIO!</p>
+                    <p class="text-xs sm:text-sm text-slate-900 font-medium" id="sosBannerDetail">Un dispositivo ha solicitado ayuda mediante el botón SOS.</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="generateEmergencyAiPlan()" class="px-3 py-1.5 rounded-xl bg-slate-950 text-amber-300 text-xs font-bold hover:bg-slate-900 transition flex items-center gap-1.5 border border-amber-400/40">
+                    <i class="fa-solid fa-brain text-purple-300"></i> Protocolo IA Rescate
+                </button>
+                <button onclick="dismissSosAlert()" class="px-3 py-1.5 rounded-xl bg-slate-950 text-amber-400 text-xs font-bold hover:bg-slate-900 transition">
+                    Entendido
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- SOS ALERT BANNER -->
     <div id="sosAlertBanner" class="hidden bg-amber-500 text-slate-950 px-4 py-3 shadow-2xl border-b border-amber-600 transition-all">
         <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
