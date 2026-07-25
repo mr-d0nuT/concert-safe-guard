@@ -61,6 +61,15 @@
             animation: pulse-ring-sos 0.7s infinite cubic-bezier(0.66, 0, 0, 1);
         }
 
+        @keyframes blink-red-sos {
+            0%, 100% { background-color: #dc2626; border-color: #facc15; box-shadow: 0 0 20px rgba(220, 38, 38, 0.95); }
+            50% { background-color: #991b1b; border-color: #fef08a; box-shadow: 0 0 35px rgba(239, 68, 68, 1); }
+        }
+
+        .sos-blinking-red {
+            animation: blink-red-sos 0.5s infinite ease-in-out !important;
+        }
+
         @keyframes pulse-ring {
             to { box-shadow: 0 0 0 20px rgba(99, 102, 241, 0); }
         }
@@ -130,9 +139,10 @@
             </div>
 
             <div class="flex items-center gap-2 flex-wrap">
-                <button onclick="openAiAssistantModal()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-purple-600/30 transition transform active:scale-95" title="Asistente de Seguridad IA Gemini">
-                    <i class="fa-solid fa-robot text-sm text-purple-200 animate-bounce"></i>
-                    <span>Asistente IA</span>
+                <!-- Host Name Editor Button -->
+                <button onclick="editHostName()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition active:scale-95" title="Editar tu nombre para que te reconozcan los demás teléfonos">
+                    <i class="fa-solid fa-user-pen text-indigo-400"></i>
+                    <span>Mi Nombre: <strong id="hostNameDisplay" class="text-indigo-300 font-semibold">Líder GPS</strong></span>
                 </button>
 
                 <button onclick="openARView()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition transform active:scale-95" title="Activar Cámara con Posiciones y Distancias Superpuestas">
@@ -182,9 +192,6 @@
                 </div>
             </div>
             <div class="flex items-center gap-2 flex-wrap">
-                <button onclick="generateEmergencyAiPlan()" class="px-3 py-1.5 rounded-xl bg-purple-900 hover:bg-purple-800 text-purple-100 border border-purple-400/40 text-xs font-extrabold transition shadow-md active:scale-95 flex items-center gap-1.5">
-                    <i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i> Plan IA Rescate
-                </button>
                 <button onclick="silenceAlarm()" class="px-3 py-1.5 rounded-xl bg-white text-rose-700 text-xs font-extrabold hover:bg-rose-50 transition shadow-md active:scale-95">
                     <i class="fa-solid fa-volume-xmark mr-1"></i> Silenciar Alarma
                 </button>
@@ -204,11 +211,8 @@
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <button onclick="generateEmergencyAiPlan()" class="px-3 py-1.5 rounded-xl bg-slate-950 text-amber-300 text-xs font-bold hover:bg-slate-900 transition flex items-center gap-1.5 border border-amber-400/40">
-                    <i class="fa-solid fa-brain text-purple-300"></i> Protocolo IA Rescate
-                </button>
-                <button onclick="dismissSosAlert()" class="px-3 py-1.5 rounded-xl bg-slate-950 text-amber-400 text-xs font-bold hover:bg-slate-900 transition">
-                    Entendido
+                <button onclick="dismissSosAlert()" class="px-3 py-1.5 rounded-xl bg-rose-700 text-white text-xs font-black hover:bg-rose-800 transition shadow-lg animate-pulse flex items-center gap-1">
+                    <i class="fa-solid fa-bell-slash"></i> Desactivar Alerta SOS
                 </button>
             </div>
         </div>
@@ -219,7 +223,6 @@
         <!-- LEFT COLUMN: MAP & CONTROLS (8 Cols) -->
         <section class="lg:col-span-8 flex flex-col gap-4">
 
-            <!-- Clean 2-column Geofence & GPS Controls -->
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
                     <div>
@@ -241,10 +244,9 @@
                 </div>
             </div>
 
-            <!-- Map Box Container with Rotatable Inner Wrapper for Perfect Centering -->
+            <!-- Map Box Container with Rotatable Inner Wrapper -->
             <div id="mapContainer" class="bg-slate-900 border border-slate-800 rounded-2xl p-2 shadow-xl flex-1 min-h-[420px] lg:min-h-[500px] relative overflow-hidden flex flex-col">
                 
-                <!-- Expanded Map Wrapper allows smooth 360 compass rotation without showing empty edges -->
                 <div class="absolute inset-0 overflow-hidden flex items-center justify-center pointer-events-auto">
                     <div id="map" class="w-[150%] h-[150%] flex-shrink-0 transition-transform duration-200 ease-out z-0"></div>
                 </div>
@@ -261,9 +263,9 @@
 
                 <!-- HUD Map Overlay Indicators (Top Left) -->
                 <div class="absolute top-4 left-4 z-10 flex flex-wrap gap-2 pointer-events-none pr-24">
-                    <span class="bg-slate-950/90 backdrop-blur border border-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-2 font-medium">
+                    <span onclick="editHostName()" class="bg-slate-950/90 backdrop-blur border border-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-2 font-medium pointer-events-auto cursor-pointer hover:border-indigo-500 transition" title="Pulsa para cambiar tu nombre">
                         <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping"></span>
-                        <i class="fa-solid fa-user-shield text-indigo-400"></i> Mi GPS
+                        <i class="fa-solid fa-user-shield text-indigo-400"></i> <span id="mapHostNameBadge">Líder GPS</span>
                     </span>
                     <span id="headingBadge" class="bg-slate-950/90 backdrop-blur border border-slate-700 text-indigo-300 text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 font-mono">
                         <i class="fa-solid fa-compass text-xs text-indigo-400"></i> <span id="headingText">Rumbo: 0°</span>
@@ -277,7 +279,7 @@
                     </span>
                 </div>
 
-                <!-- AR Camera Floating Action Button (Bottom Right) -->
+                <!-- AR Camera Floating Action Button -->
                 <div class="absolute bottom-6 right-6 z-10 pointer-events-auto">
                     <button onclick="openARView()" class="px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-600 to-indigo-600 hover:from-emerald-400 hover:to-indigo-500 text-white font-extrabold text-xs shadow-2xl shadow-emerald-500/50 flex items-center gap-2 transition transform active:scale-90 border border-emerald-400/40">
                         <i class="fa-solid fa-camera text-base"></i>
@@ -291,7 +293,6 @@
         <!-- RIGHT COLUMN: CONNECTED DEVICES & SOS (4 Cols) -->
         <section class="lg:col-span-4 flex flex-col gap-4">
 
-            <!-- Member List Header Card -->
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
                 <div class="flex items-center justify-between mb-2">
                     <h2 class="font-bold text-slate-100 text-base flex items-center gap-2">
@@ -313,9 +314,9 @@
                 </p>
             </div>
 
-            <!-- Scrollable Dynamic Members List -->
+            <!-- Dynamic Members List Container -->
             <div id="membersContainer" class="flex flex-col gap-3 overflow-y-auto max-h-[520px] pr-1">
-                <!-- Dynamically populated via JavaScript -->
+                <!-- Dynamically populated via JS -->
             </div>
 
             <!-- SOS Action Widget Card -->
@@ -364,66 +365,6 @@
                     <div id="radarMemberDots" class="absolute inset-0 pointer-events-none"></div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- GEMINI AI SAFETY ASSISTANT MODAL -->
-    <div id="aiAssistantModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[130] flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-purple-500/40 rounded-3xl max-w-lg w-full p-5 shadow-2xl flex flex-col h-[85vh] max-h-[650px] relative">
-            <button onclick="closeAiAssistantModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center transition z-10">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-
-            <div class="flex items-center gap-3 border-b border-slate-800 pb-3 mb-3 pr-8">
-                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white text-xl shadow-lg shadow-purple-500/30">
-                    <i class="fa-solid fa-robot"></i>
-                </div>
-                <div>
-                    <h3 class="font-extrabold text-base text-white flex items-center gap-2">
-                        ConcertSafe Guard AI Assistant
-                        <span class="text-[9px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/30 font-mono">Gemini 3 Flash</span>
-                    </h3>
-                    <p class="text-xs text-slate-400">Asesor de seguridad, protocolos y rescates en tiempo real</p>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-1.5 overflow-x-auto pb-2 mb-2 no-scrollbar text-[11px]">
-                <button onclick="sendQuickAiPrompt('¿Qué protocolo seguir si un menor se pierde en el concierto?')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-slate-800 hover:bg-purple-900/60 text-purple-200 border border-slate-700 transition">
-                    🚨 Menor perdido
-                </button>
-                <button onclick="sendQuickAiPrompt('Genera una alerta para entregar al personal de seguridad del festival.')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-slate-800 hover:bg-purple-900/60 text-purple-200 border border-slate-700 transition">
-                    📋 Reporte para seguridad
-                </button>
-                <button onclick="sendQuickAiPrompt('Consejos de orientación si no hay cobertura de datos móviles en el recinto.')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-slate-800 hover:bg-purple-900/60 text-purple-200 border border-slate-700 transition">
-                    📶 Sin cobertura
-                </button>
-            </div>
-
-            <div id="aiChatMessages" class="flex-1 overflow-y-auto space-y-3 p-3 bg-slate-950/80 rounded-2xl border border-slate-800/80 mb-3 text-xs">
-                <div class="flex items-start gap-2.5 bg-slate-900/90 p-3 rounded-2xl border border-slate-800">
-                    <div class="w-7 h-7 rounded-xl bg-purple-600/30 text-purple-300 flex items-center justify-center flex-shrink-0 text-xs">
-                        <i class="fa-solid fa-robot"></i>
-                    </div>
-                    <div class="space-y-1 text-slate-200 leading-relaxed">
-                        <p class="font-bold text-purple-300">¡Hola! Soy tu asistente IA de ConcertSafe Guard.</p>
-                        <p>Te puedo guiar ante pérdidas, aglomeraciones o alertas SOS en el recinto. ¿En qué te puedo ayudar?</p>
-                    </div>
-                </div>
-            </div>
-
-            <div id="aiLoadingIndicator" class="hidden p-2 mb-2 bg-purple-950/40 border border-purple-500/30 rounded-xl text-xs text-purple-300 flex items-center justify-between">
-                <span class="flex items-center gap-2">
-                    <i class="fa-solid fa-spinner animate-spin text-purple-400"></i>
-                    <span>Gemini IA analizando situación...</span>
-                </span>
-            </div>
-
-            <form onsubmit="handleAiChatSubmit(event)" class="flex items-center gap-2">
-                <input type="text" id="aiChatInput" placeholder="Haz una pregunta de seguridad o consulta SOS..." required class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
-                <button type="submit" id="sendAiChatBtn" class="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg transition active:scale-95">
-                    <i class="fa-solid fa-paper-plane"></i>
-                </button>
-            </form>
         </div>
     </div>
 
@@ -585,7 +526,8 @@
             localStorage.setItem('concert_device_id', myDeviceId);
         }
 
-        let myRegisteredName = localStorage.getItem('concert_my_name') || '';
+        // Host name management
+        let myRegisteredName = localStorage.getItem('concert_my_name') || 'Líder GPS';
         let gpsSyncCounter = 0;
         let currentPosCache = null;
 
@@ -617,224 +559,33 @@
         ];
         let currentBrokerIndex = 0;
 
-        async function callGeminiApi(promptText, systemInstructionText = "Eres el asistente de seguridad IA de ConcertSafe Guard.") {
-            const apiKey = "";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-
-            const payload = {
-                contents: [{ parts: [{ text: promptText }] }],
-                systemInstruction: { parts: [{ text: systemInstructionText }] }
-            };
-
-            let attempts = 0;
-            while (attempts < 3) {
-                try {
-                    const res = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    const data = await res.json();
-                    const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (txt) return txt;
-                    throw new Error("No text returned");
-                } catch (e) {
-                    attempts++;
-                    if (attempts >= 3) throw e;
-                    await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempts)));
+        window.editHostName = function() {
+            const currentName = myRegisteredName || 'Líder GPS';
+            const newName = prompt("Introduce tu nombre para que los demás teléfonos del grupo te identifiquen:", currentName);
+            if (newName !== null && newName.trim().length > 0) {
+                myRegisteredName = newName.trim();
+                localStorage.setItem('concert_my_name', myRegisteredName);
+                updateHostUI();
+                
+                if (currentPosCache) {
+                    pushLocationToServer(currentPosCache.lat, currentPosCache.lng);
+                } else if (parentPosition) {
+                    pushLocationToServer(parentPosition.lat, parentPosition.lng);
                 }
-            }
-        }
-
-        async function callGeminiTtsApi(speechText) {
-            const apiKey = "";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
-
-            const payload = {
-                contents: [{
-                    parts: [{ text: `Di con voz alta, clara y autoritaria de seguridad: ${speechText}` }]
-                }],
-                generationConfig: {
-                    responseModalities: ["AUDIO"],
-                    speechConfig: {
-                        voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" } }
-                    }
-                }
-            };
-
-            try {
-                const res = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await res.json();
-                const part = result?.candidates?.[0]?.content?.parts?.[0];
-                const audioData = part?.inlineData?.data;
-                const mimeType = part?.inlineData?.mimeType || '';
-
-                if (audioData) {
-                    let sampleRate = 24000;
-                    const match = mimeType.match(/rate=(\d+)/);
-                    if (match && match[1]) sampleRate = parseInt(match[1], 10);
-
-                    const pcmBuffer = base64ToArrayBuffer(audioData);
-                    const pcm16 = new Int16Array(pcmBuffer);
-                    const wavBlob = pcmToWav(pcm16, sampleRate);
-                    const audioUrl = URL.createObjectURL(wavBlob);
-                    const audio = new Audio(audioUrl);
-                    audio.play();
-                }
-            } catch(e) {
-                if ('speechSynthesis' in window) {
-                    const utter = new SpeechSynthesisUtterance(speechText);
-                    utter.lang = 'es-ES';
-                    window.speechSynthesis.speak(utter);
-                }
-            }
-        }
-
-        function base64ToArrayBuffer(base64) {
-            const binaryString = atob(base64);
-            const len = binaryString.length;
-            const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            return bytes.buffer;
-        }
-
-        function pcmToWav(pcm16, sampleRate) {
-            const numChannels = 1;
-            const byteRate = sampleRate * numChannels * 2;
-            const blockAlign = numChannels * 2;
-            const dataSize = pcm16.length * 2;
-            const buffer = new ArrayBuffer(44 + dataSize);
-            const view = new DataView(buffer);
-
-            writeString(view, 0, 'RIFF');
-            view.setUint32(4, 36 + dataSize, true);
-            writeString(view, 8, 'WAVE');
-            writeString(view, 12, 'fmt ');
-            view.setUint32(16, 16, true);
-            view.setUint16(20, 1, true);
-            view.setUint16(22, numChannels, true);
-            view.setUint32(24, sampleRate, true);
-            view.setUint32(28, byteRate, true);
-            view.setUint16(32, blockAlign, true);
-            view.setUint16(34, 16, true);
-            writeString(view, 36, 'data');
-            view.setUint32(40, dataSize, true);
-
-            let offset = 44;
-            for (let i = 0; i < pcm16.length; i++, offset += 2) {
-                view.setInt16(offset, pcm16[i], true);
-            }
-
-            return new Blob([buffer], { type: 'audio/wav' });
-        }
-
-        function writeString(view, offset, string) {
-            for (let i = 0; i < string.length; i++) {
-                view.setUint8(offset + i, string.charCodeAt(i));
-            }
-        }
-
-        window.openAiAssistantModal = function() {
-            document.getElementById('aiAssistantModal').classList.remove('hidden');
-        };
-
-        window.closeAiAssistantModal = function() {
-            document.getElementById('aiAssistantModal').classList.add('hidden');
-        };
-
-        window.sendQuickAiPrompt = function(promptText) {
-            document.getElementById('aiChatInput').value = promptText;
-            handleAiChatSubmit(new Event('submit'));
-        };
-
-        window.handleAiChatSubmit = async function(e) {
-            if (e) e.preventDefault();
-            const input = document.getElementById('aiChatInput');
-            const prompt = input.value.trim();
-            if (!prompt) return;
-
-            appendAiChatMessage("user", prompt);
-            input.value = '';
-
-            const loading = document.getElementById('aiLoadingIndicator');
-            loading.classList.remove('hidden');
-
-            try {
-                const sysPrompt = `Eres el asistente oficial de seguridad de la app ConcertSafe Guard. Responde de forma muy concisa, estructurada y calmada. Da pasos accionables. Si detectas un caso grave de desaparición o desorientación, incluye un texto corto que puedan mostrar al personal de seguridad.`;
-                const reply = await callGeminiApi(prompt, sysPrompt);
-                appendAiChatMessage("assistant", reply);
-            } catch (err) {
-                appendAiChatMessage("assistant", "⚠️ Ocurrió un error al consultar la IA. Verifica tu conexión a internet.");
-            } finally {
-                loading.classList.add('hidden');
+                showToastNotification(`Tu nombre visible ha cambiado a: ${myRegisteredName}`);
             }
         };
 
-        function appendAiChatMessage(sender, text) {
-            const container = document.getElementById('aiChatMessages');
-            const msgDiv = document.createElement('div');
+        function updateHostUI() {
+            const displayEl = document.getElementById('hostNameDisplay');
+            const badgeEl = document.getElementById('mapHostNameBadge');
+            if (displayEl) displayEl.innerText = myRegisteredName;
+            if (badgeEl) badgeEl.innerText = myRegisteredName;
 
-            if (sender === "user") {
-                msgDiv.className = "flex items-start justify-end gap-2 text-right";
-                msgDiv.innerHTML = `
-                    <div class="bg-purple-600 text-white p-3 rounded-2xl max-w-[85%] font-medium">
-                        ${text}
-                    </div>
-                `;
-            } else {
-                msgDiv.className = "flex items-start gap-2.5 bg-slate-900 p-3 rounded-2xl border border-slate-800";
-                msgDiv.innerHTML = `
-                    <div class="w-7 h-7 rounded-xl bg-purple-600/30 text-purple-300 flex items-center justify-center flex-shrink-0 text-xs">
-                        <i class="fa-solid fa-robot"></i>
-                    </div>
-                    <div class="space-y-2 text-slate-200 leading-relaxed max-w-[90%]">
-                        <p class="whitespace-pre-wrap">${text}</p>
-                        <button onclick="speakAiText(this)" data-text="${text.replace(/"/g, '&quot;')}" class="text-[10px] bg-purple-950 text-purple-300 border border-purple-500/40 px-2 py-1 rounded font-bold hover:bg-purple-900 transition flex items-center gap-1">
-                            <i class="fa-solid fa-volume-high"></i> Escuchar Alerta Hablada IA
-                        </button>
-                    </div>
-                `;
+            if (parentMarker) {
+                parentMarker.bindPopup(`<b>${myRegisteredName} (Líder)</b><br>Centro del perímetro seguro`);
             }
-            container.appendChild(msgDiv);
-            container.scrollTop = container.scrollHeight;
         }
-
-        window.speakAiText = function(btn) {
-            const txt = btn.getAttribute('data-text');
-            if (txt) callGeminiTtsApi(txt);
-        };
-
-        window.generateEmergencyAiPlan = async function() {
-            openAiAssistantModal();
-
-            const breached = groupMembers.filter(m => calculateDistance(parentPosition.lat, parentPosition.lng, m.lat, m.lng) > safeRadiusMeters || m.sos);
-            const telemetrySummary = breached.map(m => {
-                const d = Math.round(calculateDistance(parentPosition.lat, parentPosition.lng, m.lat, m.lng));
-                return `- ${m.name}: a ${d} metros de distancia. Batería: ${m.battery}%. Estado SOS: ${m.sos ? 'ACTIVADO' : 'Inactivo'}.`;
-            }).join('\n');
-
-            const query = `EMERGENCIA CONCERTSAFE DETECTADA:\nDatos de telemetría en tiempo real:\n${telemetrySummary || 'Un integrante ha superado la distancia límite.'}\nGenera inmediatamente un Plan de Rescate y Búsqueda en 3 pasos clave para el adulto/líder del grupo y redacta un borrador de mensaje para seguridad del evento.`;
-
-            appendAiChatMessage("user", "🚨 ¡Genera un Plan de Acción IA urgente con la telemetría actual!");
-            const loading = document.getElementById('aiLoadingIndicator');
-            loading.classList.remove('hidden');
-
-            try {
-                const planText = await callGeminiApi(query, "Eres un experto en seguridad de multitudes y eventos masivos. Ofrece respuestas ejecutivas ultra directas y de máximo valor táctico.");
-                appendAiChatMessage("assistant", planText);
-                callGeminiTtsApi("Atención: Plan de emergencia generado por Inteligencia Artificial. Revisa las instrucciones en pantalla.");
-            } catch(e) {
-                appendAiChatMessage("assistant", "⚠️ No se pudo procesar la telemetría en la IA.");
-            } finally {
-                loading.classList.add('hidden');
-            }
-        };
 
         function updateCloudBadge(isConnected, message) {
             const badge = document.getElementById('cloudStatusBadge');
@@ -897,8 +648,9 @@
                                 syncRosterAndMap();
 
                                 if (payload.targetId === myDeviceId) {
-                                    myRegisteredName = '';
+                                    myRegisteredName = 'Líder GPS';
                                     localStorage.removeItem('concert_my_name');
+                                    updateHostUI();
                                     document.getElementById('mobileActiveBanner').classList.add('hidden');
                                     showToastNotification("Has sido desvinculado del grupo por el administrador.");
                                 }
@@ -910,6 +662,21 @@
                             if (payload.id) {
                                 removedMemberIds.delete(payload.id);
                             }
+                        }
+
+                        if (payload.type === 'clear_sos') {
+                            if (payload.targetId === 'all') {
+                                groupMembersMap.forEach(m => m.sos = false);
+                            } else if (payload.targetId && groupMembersMap.has(payload.targetId)) {
+                                groupMembersMap.get(payload.targetId).sos = false;
+                            }
+                            const hasAnySos = Array.from(groupMembersMap.values()).some(m => m.sos);
+                            if (!hasAnySos) {
+                                document.getElementById('sosAlertBanner').classList.add('hidden');
+                            }
+                            syncRosterAndMap();
+                            showToastNotification("🟢 Alerta SOS desactivada.");
+                            return;
                         }
 
                         if (payload.type === 'ping' && payload.id !== myDeviceId) {
@@ -975,7 +742,7 @@
                 const topic = `concertsafeguard/v2/room_${activeGroupId}`;
                 const payload = {
                     id: myDeviceId,
-                    name: myRegisteredName || 'Dispositivo ' + myDeviceId.substring(4, 8),
+                    name: myRegisteredName || 'Líder GPS',
                     lat: lat,
                     lng: lng,
                     battery: 95,
@@ -1025,7 +792,7 @@
             });
 
             parentMarker = L.marker([parentPosition.lat, parentPosition.lng], { icon: parentIcon }).addTo(map);
-            parentMarker.bindPopup("<b>Mi Posición GPS (Líder)</b><br>Centro del perímetro seguro");
+            parentMarker.bindPopup(`<b>${myRegisteredName} (Líder)</b><br>Centro del perímetro seguro`);
 
             radiusCircle = L.circle([parentPosition.lat, parentPosition.lng], {
                 color: '#6366f1',
@@ -1054,7 +821,6 @@
                 headingCone.style.transform = `rotate(${heading}deg)`;
             }
 
-            // Smooth compass rotation applied to wrapper div to ensure GPS marker stays strictly centered
             const mapEl = document.getElementById('map');
             if (mapEl) {
                 if (isCompassMapOriented) {
@@ -1399,28 +1165,41 @@
         }
 
         function createOrUpdateMemberMarker(member) {
+            const isSos = !!member.sos;
             const dist = calculateDistance(parentPosition.lat, parentPosition.lng, member.lat, member.lng);
             const isOutside = dist > safeRadiusMeters;
 
-            const pulseClass = member.sos ? 'pulse-marker-sos' : (isOutside ? 'pulse-marker-danger' : '');
-            const bgClass = member.sos ? 'bg-amber-500' : (isOutside ? 'bg-rose-600' : 'bg-slate-900');
+            const pulseClass = isSos ? 'sos-blinking-red pulse-marker-sos' : (isOutside ? 'pulse-marker-danger' : '');
+            const bgClass = isSos ? 'sos-blinking-red bg-rose-600' : (isOutside ? 'bg-rose-600' : 'bg-slate-900');
+
+            const iconInnerHtml = isSos 
+                ? `<span class="text-amber-300 font-black text-[11px] tracking-tighter leading-none animate-pulse">SOS</span>`
+                : (member.name ? member.name.charAt(0).toUpperCase() : '?');
+
+            const nameTagHtml = isSos
+                ? `<div class="absolute -bottom-6 left-1/2 -translate-x-1/2 sos-blinking-red bg-rose-600 text-white text-[11px] font-black px-2 py-0.5 rounded-md border-2 border-amber-300 whitespace-nowrap shadow-2xl flex items-center gap-1 z-30">
+                        <span>${member.name.split(' ')[0]}</span>
+                        <span class="text-amber-300 font-black bg-slate-950/90 px-1 rounded text-[10px] tracking-wider animate-pulse border border-amber-400">SOS</span>
+                        <span class="text-slate-100 text-[10px]">(${Math.round(dist)}m)</span>
+                   </div>`
+                : `<div class="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-slate-950/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-md border border-slate-700 whitespace-nowrap shadow-lg">
+                        ${member.name.split(' ')[0]} (${Math.round(dist)}m)
+                   </div>`;
 
             const iconHtml = `
                 <div class="relative group">
-                    <div class="w-8 h-8 rounded-full ${bgClass} ${pulseClass} border-2 flex items-center justify-center text-white text-xs font-black shadow-xl" style="border-color: ${member.color}">
-                        ${member.sos ? '<i class="fa-solid fa-hand text-xs text-slate-950"></i>' : member.name.charAt(0).toUpperCase()}
+                    <div class="w-9 h-9 rounded-full ${bgClass} ${pulseClass} border-2 flex items-center justify-center text-white text-xs font-black shadow-xl" style="border-color: ${isSos ? '#facc15' : member.color}">
+                        ${iconInnerHtml}
                     </div>
-                    <div class="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-slate-950/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-md border border-slate-700 whitespace-nowrap shadow-lg">
-                        ${member.name.split(' ')[0]} (${Math.round(dist)}m)
-                    </div>
+                    ${nameTagHtml}
                 </div>
             `;
 
             const customIcon = L.divIcon({
                 className: 'custom-member-icon',
                 html: iconHtml,
-                iconSize: [32, 32],
-                iconAnchor: [16, 16]
+                iconSize: [36, 36],
+                iconAnchor: [18, 18]
             });
 
             const elapsedSecs = Math.max(0, Math.floor((Date.now() - member.updated) / 1000));
@@ -1433,10 +1212,11 @@
                 const marker = L.marker([member.lat, member.lng], { icon: customIcon }).addTo(map);
                 marker.bindPopup(`
                     <div class="p-1 font-sans">
-                        <strong style="color:${member.color}">${member.name}</strong><br>
+                        <strong style="color:${member.color}">${member.name}</strong> ${isSos ? '<span class="bg-rose-600 text-amber-300 px-1.5 py-0.5 rounded font-black text-xs border border-amber-400">¡ALERTA SOS!</span>' : ''}<br>
                         Distancia: <b>${Math.round(dist)} m</b><br>
                         Batería: <b>${member.battery}%</b><br>
                         Transmisión: <b>${timeAgoStr}</b>
+                        ${isSos ? `<br><button onclick="clearSosSignal('${member.id}')" class="mt-2.5 w-full bg-rose-600 hover:bg-rose-500 text-amber-300 font-extrabold text-xs py-1.5 rounded-xl border border-amber-400/50 shadow-md">Desactivar SOS</button>` : ''}
                     </div>
                 `);
                 memberMarkers[member.id] = marker;
@@ -1573,6 +1353,7 @@
         });
 
         window.addEventListener('load', async () => {
+            updateHostUI();
             initLeafletMap();
             startHostGpsTracking();
             initMqttSync();
@@ -1649,7 +1430,6 @@
                         parentMarker.setLatLng([lat, lng]);
                         radiusCircle.setLatLng([lat, lng]);
                         
-                        // Continuously keep map viewport strictly centered on your GPS leader location
                         map.panTo([lat, lng], { animate: true, duration: 0.5 });
                     }
 
@@ -1772,7 +1552,7 @@
                 try {
                     const deviceDoc = doc(db, 'artifacts', appId, 'public', 'data', `positions_${activeGroupId}`, myDeviceId);
                     setDoc(deviceDoc, {
-                        name: myRegisteredName,
+                        name: myRegisteredName || 'Líder GPS',
                         lat: lat,
                         lng: lng,
                         battery: 92,
@@ -1802,6 +1582,7 @@
 
             myRegisteredName = nameInput;
             localStorage.setItem('concert_my_name', nameInput);
+            updateHostUI();
 
             removedMemberIds.delete(myDeviceId);
 
@@ -1886,8 +1667,43 @@
             alertModal("🚨 ¡Alerta SOS enviada! El grupo ha sido notificado con tu ubicación exacta.");
         };
 
+        window.clearSosSignal = function(targetMemberId = 'all') {
+            if (targetMemberId === 'all') {
+                groupMembersMap.forEach(m => m.sos = false);
+            } else if (groupMembersMap.has(targetMemberId)) {
+                groupMembersMap.get(targetMemberId).sos = false;
+            }
+
+            if (mqttClient && mqttClient.connected) {
+                const topic = `concertsafeguard/v2/room_${activeGroupId}`;
+                mqttClient.publish(topic, JSON.stringify({ type: 'clear_sos', targetId: targetMemberId, id: myDeviceId }), { qos: 0 });
+            }
+
+            if (db && currentUser) {
+                try {
+                    if (targetMemberId === 'all') {
+                        groupMembersMap.forEach((m, id) => {
+                            const memberDoc = doc(db, 'artifacts', appId, 'public', 'data', `positions_${activeGroupId}`, id);
+                            setDoc(memberDoc, { sos: false }, { merge: true }).catch(() => {});
+                        });
+                    } else {
+                        const memberDoc = doc(db, 'artifacts', appId, 'public', 'data', `positions_${activeGroupId}`, targetMemberId);
+                        setDoc(memberDoc, { sos: false }, { merge: true }).catch(() => {});
+                    }
+                } catch(e){}
+            }
+
+            const hasAnySos = Array.from(groupMembersMap.values()).some(m => m.sos);
+            if (!hasAnySos) {
+                document.getElementById('sosAlertBanner').classList.add('hidden');
+            }
+
+            syncRosterAndMap();
+            showToastNotification("🟢 Alerta SOS desactivada.");
+        };
+
         window.dismissSosAlert = async function() {
-            document.getElementById('sosAlertBanner').classList.add('hidden');
+            window.clearSosSignal('all');
         };
 
         window.promptManualGroupCode = function() {
