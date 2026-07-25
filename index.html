@@ -94,11 +94,6 @@
             will-change: transform;
         }
 
-        .leaflet-map-pane {
-            transition: transform 0.15s ease-out;
-            will-change: transform;
-        }
-
         .animate-spin-slow {
             animation: spin 8s linear infinite;
         }
@@ -111,13 +106,6 @@
             padding: 0 !important;
             border-radius: 0 !important;
             background-color: #0f172a !important;
-        }
-
-        #mapContainer:fullscreen #map,
-        #mapContainer:-webkit-full-screen #map {
-            border-radius: 0 !important;
-            height: 100% !important;
-            min-height: 100% !important;
         }
     </style>
 </head>
@@ -231,6 +219,7 @@
         <!-- LEFT COLUMN: MAP & CONTROLS (8 Cols) -->
         <section class="lg:col-span-8 flex flex-col gap-4">
 
+            <!-- Clean 2-column Geofence & GPS Controls -->
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
                     <div>
@@ -252,10 +241,15 @@
                 </div>
             </div>
 
-            <!-- Map Box Container -->
+            <!-- Map Box Container with Rotatable Inner Wrapper for Perfect Centering -->
             <div id="mapContainer" class="bg-slate-900 border border-slate-800 rounded-2xl p-2 shadow-xl flex-1 min-h-[420px] lg:min-h-[500px] relative overflow-hidden flex flex-col">
-                <div id="map" class="w-full h-full min-h-[400px] lg:min-h-[480px] rounded-xl z-0"></div>
+                
+                <!-- Expanded Map Wrapper allows smooth 360 compass rotation without showing empty edges -->
+                <div class="absolute inset-0 overflow-hidden flex items-center justify-center pointer-events-auto">
+                    <div id="map" class="w-[150%] h-[150%] flex-shrink-0 transition-transform duration-200 ease-out z-0"></div>
+                </div>
 
+                <!-- HUD Map Controls (Top Right) -->
                 <div class="absolute top-3 right-3 z-10 flex items-center gap-2 pointer-events-auto">
                     <button id="compassMapBtn" onclick="toggleCompassOrientation()" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-950/90 backdrop-blur border border-slate-700/80 text-emerald-400 hover:border-emerald-500/80 flex items-center justify-center shadow-xl transition transform active:scale-95" title="Activar/Desactivar Orientación con Brújula">
                         <i id="compassIcon" class="fa-solid fa-compass text-emerald-400 text-xs sm:text-sm animate-spin-slow"></i>
@@ -265,6 +259,7 @@
                     </button>
                 </div>
 
+                <!-- HUD Map Overlay Indicators (Top Left) -->
                 <div class="absolute top-4 left-4 z-10 flex flex-wrap gap-2 pointer-events-none pr-24">
                     <span class="bg-slate-950/90 backdrop-blur border border-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-2 font-medium">
                         <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping"></span>
@@ -282,7 +277,8 @@
                     </span>
                 </div>
 
-                <div class="absolute bottom-6 right-6 z-10">
+                <!-- AR Camera Floating Action Button (Bottom Right) -->
+                <div class="absolute bottom-6 right-6 z-10 pointer-events-auto">
                     <button onclick="openARView()" class="px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-600 to-indigo-600 hover:from-emerald-400 hover:to-indigo-500 text-white font-extrabold text-xs shadow-2xl shadow-emerald-500/50 flex items-center gap-2 transition transform active:scale-90 border border-emerald-400/40">
                         <i class="fa-solid fa-camera text-base"></i>
                         <span>Abrir Cámara RA</span>
@@ -295,7 +291,7 @@
         <!-- RIGHT COLUMN: CONNECTED DEVICES & SOS (4 Cols) -->
         <section class="lg:col-span-4 flex flex-col gap-4">
 
-            <!-- Single Consolidated Member List Header Card -->
+            <!-- Member List Header Card -->
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
                 <div class="flex items-center justify-between mb-2">
                     <h2 class="font-bold text-slate-100 text-base flex items-center gap-2">
@@ -650,40 +646,6 @@
             }
         }
 
-        async function callGeminiVisionApi(promptText, base64Data, mimeType = "image/jpeg") {
-            const apiKey = "";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-
-            const payload = {
-                contents: [{
-                    role: "user",
-                    parts: [
-                        { text: promptText },
-                        { inlineData: { mimeType: mimeType, data: base64Data } }
-                    ]
-                }]
-            };
-
-            let attempts = 0;
-            while (attempts < 3) {
-                try {
-                    const res = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    const data = await res.json();
-                    const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (txt) return txt;
-                    throw new Error("No vision text returned");
-                } catch (e) {
-                    attempts++;
-                    if (attempts >= 3) throw e;
-                    await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempts)));
-                }
-            }
-        }
-
         async function callGeminiTtsApi(speechText) {
             const apiKey = "";
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
@@ -872,63 +834,6 @@
             } finally {
                 loading.classList.add('hidden');
             }
-        };
-
-        window.openAiOutfitScannerModal = function() {
-            document.getElementById('aiOutfitScannerModal').classList.remove('hidden');
-        };
-
-        window.previewOutfitPhoto = function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                const img = document.getElementById('outfitPreviewImg');
-                img.src = evt.target.result;
-                img.classList.remove('hidden');
-
-                currentOutfitBase64 = evt.target.result.split(',')[1];
-                document.getElementById('analyzeOutfitBtn').disabled = false;
-            };
-            reader.readAsDataURL(file);
-        };
-
-        window.processOutfitPhoto = async function() {
-            if (!currentOutfitBase64) return;
-
-            const btn = document.getElementById('analyzeOutfitBtn');
-            const resultBox = document.getElementById('outfitAnalysisResult');
-            const resultText = document.getElementById('outfitDossierText');
-
-            btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Analizando ropa e indumentaria...`;
-
-            const prompt = `Analiza detalladamente la vestimenta de la persona en la foto para crear una Ficha Técnica de Búsqueda Rápida en caso de extravío en un concierto. Describe brevemente: 1) Colores principales de la ropa, 2) Tipo de prenda superior e inferior, 3) Calzado y accesorios visibles, 4) Marcas o rasgos distintivos evidentes. Formato claro tipo viñetas.`;
-
-            try {
-                const analysis = await callGeminiVisionApi(prompt, currentOutfitBase64);
-                resultText.innerText = `FICHA DE IDENTIFICACIÓN CONCERTSAFE\nFecha: ${new Date().toLocaleDateString()} - ${new Date().toLocaleTimeString()}\nSala: ${activeGroupId}\n\n${analysis}`;
-                resultBox.classList.remove('hidden');
-                showToastNotification("Ficha de vestimenta IA creada con éxito.");
-            } catch (err) {
-                resultText.innerText = "Error al analizar la imagen con IA. Inténtalo con otra foto.";
-                resultBox.classList.remove('hidden');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> Analizar Indumentaria con IA Gemini`;
-            }
-        };
-
-        window.copyOutfitDossier = function() {
-            const txt = document.getElementById('outfitDossierText').innerText;
-            const temp = document.createElement('textarea');
-            temp.value = txt;
-            document.body.appendChild(temp);
-            temp.select();
-            document.execCommand('copy');
-            document.body.removeChild(temp);
-            alertModal("📋 Ficha de búsqueda IA copiada al portapapeles.");
         };
 
         function updateCloudBadge(isConnected, message) {
@@ -1130,6 +1035,10 @@
                 dashArray: '6, 6',
                 radius: safeRadiusMeters
             }).addTo(map);
+
+            setTimeout(() => {
+                if (map) map.invalidateSize();
+            }, 300);
         }
 
         function updateMapOrientation(heading) {
@@ -1145,13 +1054,13 @@
                 headingCone.style.transform = `rotate(${heading}deg)`;
             }
 
-            const mapPane = document.querySelector('.leaflet-map-pane');
-            if (mapPane) {
+            // Smooth compass rotation applied to wrapper div to ensure GPS marker stays strictly centered
+            const mapEl = document.getElementById('map');
+            if (mapEl) {
                 if (isCompassMapOriented) {
-                    mapPane.style.transformOrigin = 'center center';
-                    mapPane.style.transform = `rotate(${-heading}deg)`;
+                    mapEl.style.transform = `rotate(${-heading}deg)`;
                 } else {
-                    mapPane.style.transform = 'none';
+                    mapEl.style.transform = 'rotate(0deg)';
                 }
             }
         }
@@ -1175,10 +1084,46 @@
                 showToastNotification("🧭 Modo Brújula Activado: El mapa gira según giras el teléfono.");
             } else {
                 if (btnIcon) btnIcon.className = "fa-solid fa-compass text-indigo-400 text-xs sm:text-sm";
-                const mapPane = document.querySelector('.leaflet-map-pane');
-                if (mapPane) mapPane.style.transform = 'none';
+                const mapEl = document.getElementById('map');
+                if (mapEl) mapEl.style.transform = 'rotate(0deg)';
                 showToastNotification("📍 Modo Norte Fijo Activado.");
             }
+        };
+
+        window.toggleMapFullscreen = function() {
+            const mapContainer = document.getElementById('mapContainer');
+            const icon = document.getElementById('fullscreenIcon');
+
+            if (!document.fullscreenElement) {
+                if (mapContainer.requestFullscreen) {
+                    mapContainer.requestFullscreen();
+                } else if (mapContainer.webkitRequestFullscreen) {
+                    mapContainer.webkitRequestFullscreen();
+                }
+                if (icon) icon.className = "fa-solid fa-compress text-indigo-400 text-xs sm:text-sm";
+
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(() => {});
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+                if (icon) icon.className = "fa-solid fa-expand text-indigo-400 text-xs sm:text-sm";
+
+                if (screen.orientation && screen.orientation.unlock) {
+                    screen.orientation.unlock();
+                }
+            }
+
+            setTimeout(() => {
+                if (map) {
+                    map.invalidateSize();
+                    map.panTo([parentPosition.lat, parentPosition.lng]);
+                }
+            }, 300);
         };
 
         function initOrientationSensor() {
@@ -1247,6 +1192,33 @@
                 arAnimationFrame = null;
             }
         };
+
+        function calculateBearing(lat1, lon1, lat2, lon2) {
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+            const y = Math.sin(Δλ) * Math.cos(φ2);
+            const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+            const θ = Math.atan2(y, x);
+
+            return (θ * 180 / Math.PI + 360) % 360;
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return R * c;
+        }
 
         function startARLoop() {
             function updateAROverlay() {
@@ -1426,6 +1398,55 @@
             }
         }
 
+        function createOrUpdateMemberMarker(member) {
+            const dist = calculateDistance(parentPosition.lat, parentPosition.lng, member.lat, member.lng);
+            const isOutside = dist > safeRadiusMeters;
+
+            const pulseClass = member.sos ? 'pulse-marker-sos' : (isOutside ? 'pulse-marker-danger' : '');
+            const bgClass = member.sos ? 'bg-amber-500' : (isOutside ? 'bg-rose-600' : 'bg-slate-900');
+
+            const iconHtml = `
+                <div class="relative group">
+                    <div class="w-8 h-8 rounded-full ${bgClass} ${pulseClass} border-2 flex items-center justify-center text-white text-xs font-black shadow-xl" style="border-color: ${member.color}">
+                        ${member.sos ? '<i class="fa-solid fa-hand text-xs text-slate-950"></i>' : member.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div class="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-slate-950/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-md border border-slate-700 whitespace-nowrap shadow-lg">
+                        ${member.name.split(' ')[0]} (${Math.round(dist)}m)
+                    </div>
+                </div>
+            `;
+
+            const customIcon = L.divIcon({
+                className: 'custom-member-icon',
+                html: iconHtml,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            });
+
+            const elapsedSecs = Math.max(0, Math.floor((Date.now() - member.updated) / 1000));
+            const timeAgoStr = elapsedSecs < 10 ? 'Ahora mismo' : `Hace ${elapsedSecs}s`;
+
+            if (memberMarkers[member.id]) {
+                memberMarkers[member.id].setLatLng([member.lat, member.lng]);
+                memberMarkers[member.id].setIcon(customIcon);
+            } else {
+                const marker = L.marker([member.lat, member.lng], { icon: customIcon }).addTo(map);
+                marker.bindPopup(`
+                    <div class="p-1 font-sans">
+                        <strong style="color:${member.color}">${member.name}</strong><br>
+                        Distancia: <b>${Math.round(dist)} m</b><br>
+                        Batería: <b>${member.battery}%</b><br>
+                        Transmisión: <b>${timeAgoStr}</b>
+                    </div>
+                `);
+                memberMarkers[member.id] = marker;
+            }
+        }
+
+        function updateMapMarkers() {
+            groupMembers.forEach(m => createOrUpdateMemberMarker(m));
+        }
+
         function renderRoster() {
             const container = document.getElementById('membersContainer');
             const countText = document.getElementById('membersCountText');
@@ -1503,8 +1524,11 @@
                     <div class="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
                         <span class="text-[11px]"><i class="fa-solid fa-clock text-emerald-400 mr-1"></i>${elapsedSecs < 10 ? 'Sincronizado' : `Hace ${elapsedSecs}s`}</span>
                         <div class="flex items-center gap-1.5">
+                            <button onclick="centerOnMember('${m.id}')" class="px-2.5 py-1 rounded-lg bg-indigo-950 hover:bg-indigo-900 border border-indigo-800/50 text-indigo-300 text-[11px] font-semibold transition">
+                                <i class="fa-solid fa-location-dot mr-1"></i>Ver en Mapa
+                            </button>
                             <button onclick="openARView()" class="px-2.5 py-1 rounded-lg bg-emerald-950 hover:bg-emerald-900 border border-emerald-800/50 text-emerald-300 text-[11px] font-semibold transition">
-                                <i class="fa-solid fa-camera mr-1"></i>Ver en Cámara
+                                <i class="fa-solid fa-camera mr-1"></i>Cámara RA
                             </button>
                         </div>
                     </div>
@@ -1513,6 +1537,16 @@
                 container.appendChild(card);
             });
         }
+
+        window.centerOnMember = function(memberId) {
+            const m = groupMembersMap.get(memberId);
+            if (m && map) {
+                map.flyTo([m.lat, m.lng], 19, { animate: true });
+                if (memberMarkers[memberId]) {
+                    memberMarkers[memberId].openPopup();
+                }
+            }
+        };
 
         const authReadyPromise = new Promise((resolve) => {
             try {
@@ -1608,16 +1642,15 @@
                     const lng = position.coords.longitude;
                     const acc = Math.round(position.coords.accuracy);
 
-                    const isFirstFix = !currentPosCache;
                     parentPosition = { lat, lng };
                     currentPosCache = { lat, lng };
 
                     if (map && parentMarker && radiusCircle) {
                         parentMarker.setLatLng([lat, lng]);
                         radiusCircle.setLatLng([lat, lng]);
-                        if (isFirstFix) {
-                            map.setView([lat, lng], 18);
-                        }
+                        
+                        // Continuously keep map viewport strictly centered on your GPS leader location
+                        map.panTo([lat, lng], { animate: true, duration: 0.5 });
                     }
 
                     const accText = document.getElementById('gpsAccuracyText');
@@ -1652,8 +1685,10 @@
 
         window.centerOnParent = function() {
             startHostGpsTracking();
-            map.flyTo([parentPosition.lat, parentPosition.lng], 18);
-            parentMarker.openPopup();
+            if (map) {
+                map.setView([parentPosition.lat, parentPosition.lng], 18, { animate: true });
+                if (parentMarker) parentMarker.openPopup();
+            }
         };
 
         window.toggleAudioAlarm = function() {
