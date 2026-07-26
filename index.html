@@ -567,6 +567,8 @@
         
         let isAudioAlarmEnabled = true;
         let alarmOscillator = null;
+        let sosOscillator = null;
+        let sosInterval = null;
         let audioContext = null;
         let wakeLock = null;
 
@@ -654,12 +656,13 @@
         };
 
         window.dismissSosAlert = function() {
-            isSosActive = false;
             if (mqttClient && mqttClient.connected && activeGroupId) {
-                mqttClient.publish(`concertsafeguard/v2/room_${activeGroupId}`, JSON.stringify({ type: 'clear_sos', targetId: 'all', id: myDeviceId }), { qos: 0 });
+                const topic = `concertsafeguard/v2/room_${activeGroupId}`;
+                mqttClient.publish(topic, JSON.stringify({ type: 'clear_sos', targetId: 'all', id: myDeviceId }), { qos: 0 });
             }
             groupMembersMap.forEach(m => m.sos = false);
             document.getElementById('sosAlertBanner').classList.add('hidden');
+            stopSosSound();
             syncRosterAndMap();
         };
 
@@ -672,6 +675,7 @@
             isAudioAlarmEnabled = !isAudioAlarmEnabled;
             const btnText = document.getElementById('alarmBtnText');
             const alarmIcon = document.getElementById('alarmIcon');
+
             if (isAudioAlarmEnabled) {
                 if (btnText) btnText.innerText = "Alarma";
                 if (alarmIcon) alarmIcon.className = "fa-solid fa-bell text-amber-400";
@@ -679,26 +683,8 @@
                 if (btnText) btnText.innerText = "Silenciada";
                 if (alarmIcon) alarmIcon.className = "fa-solid fa-bell-slash text-slate-500";
                 stopSirenSound();
+                stopSosSound();
             }
-        };
-
-        window.updateGeofenceRadius = function(val) {
-            safeRadiusMeters = parseInt(val);
-            const display = document.getElementById('radiusDisplay');
-            if (display) display.innerText = `${safeRadiusMeters} metros`;
-            if (radiusCircle) radiusCircle.setRadius(safeRadiusMeters);
-            checkGeofenceAlerts();
-            renderRoster();
-            updateMapMarkers();
-        };
-
-        window.clearSosSignal = function(memberId) {
-            if (mqttClient && mqttClient.connected) {
-                mqttClient.publish(`concertsafeguard/v2/room_${activeGroupId}`, JSON.stringify({ type: 'clear_sos', targetId: memberId, id: myDeviceId }), { qos: 0 });
-            }
-            if (groupMembersMap.has(memberId)) groupMembersMap.get(memberId).sos = false;
-            syncRosterAndMap();
-            showToastNotification("🟢 Alerta SOS desactivada para el integrante.");
         };
 
         window.removeMember = function(memberId, name) {
@@ -1304,23 +1290,97 @@
             if (sosMembers.length > 0) {
                 sosBanner.classList.remove('hidden');
                 const memberNames = sosMembers.map(m => m.name).join(', ');
+                
                 document.getElementById('sosBannerTitle').innerHTML = `
                     <i class="fa-solid fa-bell text-rose-900 animate-pulse"></i> 
                     ¡ALERTA SOS DE URGENCIA: ${memberNames.toUpperCase()}!
                 `;
-                document.getElementById('sosBannerDetail').innerText = `📍 ${memberNames} ha pulsado el botón de ayuda y solicita auxilio inmediato. Su posición parpadea en naranja en el mapa.`;
+                document.getElementById('sosBannerDetail').innerText = `
+                    📍 ${memberNames} ha pulsado el botón de ayuda y solicita auxilio inmediato. Su posición parpadea en naranja en el mapa.
+                `;
+                playSosSound();
             } else {
                 sosBanner.classList.add('hidden');
+                stopSosSound();
             }
         }
+
+        window.toggleCompassOrientation = async function() {
+            isCompassMapOriented = !isCompassMapOriented;
+            const btnIcon = document.getElementById('compassIcon');
+
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission === 'granted') {
+                        initOrientationSensor();
+                    }
+                } catch (e) {}
+            } else {
+                initOrientationSensor();
+            }
+
+            if (isCompassMapOriented) {
+                if (btnIcon) btnIcon.className = "fa-solid fa-compass text-emerald-400 text-xs sm:text-sm animate-spin-slow";
+                updateMapOrientation(deviceHeading);
+                showToastNotification("🧭 Modo Brújula Activado: El mapa gira según giras el teléfono.");
+            } else {
+                if (btnIcon) btnIcon.className = "fa-solid fa-compass text-indigo-400 text-xs sm:text-sm";
+                const mapEl = document.getElementById('map');
+                if (mapEl) mapEl.style.transform = 'rotate(0deg)';
+                showToastNotification("📍 Modo Norte Fijo Activado.");
+            }
+        };
+
+        window.toggleMapFullscreen = function() {
+            const mapContainer = document.getElementById('mapContainer');
+            const icon = document.getElementById('fullscreenIcon');
+
+            if (!document.fullscreenElement) {
+                if (mapContainer.requestFullscreen) {
+                    mapContainer.requestFullscreen();
+                } else if (mapContainer.webkitRequestFullscreen) {
+                    mapContainer.webkitRequestFullscreen();
+                }
+                if (icon) icon.className = "fa-solid fa-compress text-indigo-400 text-xs sm:text-sm";
+
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(() => {});
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+                if (icon) icon.className = "fa-solid fa-expand text-indigo-400 text-xs sm:text-sm";
+
+                if (screen.orientation && screen.orientation.unlock) {
+                    screen.orientation.unlock();
+                }
+            }
+
+            setTimeout(() => {
+                if (map) {
+                    map.invalidateSize();
+                    map.panTo([parentPosition.lat, parentPosition.lng]);
+                }
+            }, 300);
+        };
 
         function initOrientationSensor() {
             if (window.DeviceOrientationEvent) {
                 window.addEventListener('deviceorientation', (e) => {
                     let heading = null;
-                    if (e.webkitCompassHeading) heading = e.webkitCompassHeading;
-                    else if (e.alpha !== null) heading = (360 - e.alpha) % 360;
-                    if (heading !== null && !isNaN(heading)) updateMapOrientation(heading);
+                    if (e.webkitCompassHeading) {
+                        heading = e.webkitCompassHeading;
+                    } else if (e.alpha !== null) {
+                        heading = (360 - e.alpha) % 360;
+                    }
+
+                    if (heading !== null && !isNaN(heading)) {
+                        updateMapOrientation(heading);
+                    }
                 }, true);
             }
         }
@@ -1447,7 +1507,66 @@
         }
 
         function stopSirenSound() {
-            if (alarmOscillator) { try { alarmOscillator.stop(); alarmOscillator.disconnect(); } catch(e){} alarmOscillator = null; }
+            if (alarmOscillator) {
+                try {
+                    alarmOscillator.stop();
+                    alarmOscillator.disconnect();
+                } catch(e){}
+                alarmOscillator = null;
+            }
+        }
+
+        function playSosSound() {
+            if (!isAudioAlarmEnabled) return;
+            try {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+
+                if (sosOscillator) return; // Evitar múltiples reproducciones
+
+                sosOscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                // Onda cuadrada para un sonido más "digital" y de emergencia rápida
+                sosOscillator.type = 'square';
+                sosOscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+
+                let high = true;
+                sosInterval = setInterval(() => {
+                    if (!sosOscillator) {
+                        clearInterval(sosInterval);
+                        return;
+                    }
+                    // Alternancia de frecuencia mucho más rápida (150ms)
+                    sosOscillator.frequency.setValueAtTime(high ? 800 : 1200, audioContext.currentTime);
+                    high = !high;
+                }, 150);
+
+                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+
+                sosOscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                sosOscillator.start();
+            } catch(e){}
+        }
+
+        function stopSosSound() {
+            if (sosOscillator) {
+                try {
+                    sosOscillator.stop();
+                    sosOscillator.disconnect();
+                } catch(e){}
+                sosOscillator = null;
+            }
+            if (sosInterval) {
+                clearInterval(sosInterval);
+                sosInterval = null;
+            }
         }
 
         function checkGeofenceAlerts() {
