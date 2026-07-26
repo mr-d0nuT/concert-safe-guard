@@ -911,6 +911,27 @@
             }
         }
 
+        function ensureMqttConnected() {
+            return new Promise((resolve) => {
+                if (mqttClient && mqttClient.connected) {
+                    return resolve(true);
+                }
+                initMqttSync();
+                
+                let attempts = 0;
+                const checkInterval = setInterval(() => {
+                    attempts++;
+                    if (mqttClient && mqttClient.connected) {
+                        clearInterval(checkInterval);
+                        resolve(true);
+                    } else if (attempts >= 25) {
+                        clearInterval(checkInterval);
+                        resolve(false);
+                    }
+                }, 100);
+            });
+        }
+
         async function attemptRoomClaim(requestedRoom) {
             const cleanRoom = requestedRoom.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
             if (!cleanRoom || cleanRoom.length < 3) {
@@ -921,11 +942,11 @@
                 return { success: true };
             }
 
-            await authReadyPromise;
             const now = Date.now();
-            const STALE_THRESHOLD = 60 * 1000; // 60 seconds
+            const STALE_THRESHOLD = 45 * 1000; // 45 seconds heartbeat window
 
-            // 1. Check Firestore first (DB Room Lock)
+            // 1. Check Firestore Lock First
+            await authReadyPromise;
             if (db && currentUser) {
                 try {
                     const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'room_claims', cleanRoom);
@@ -949,10 +970,8 @@
                 }
             }
 
-            // 2. Secondary MQTT P2P query check
-            if (!mqttClient) {
-                initMqttSync();
-            }
+            // 2. Secondary Active MQTT Probe Check
+            await ensureMqttConnected();
 
             const mqttCheckPromise = new Promise((resolve) => {
                 let isOccupied = false;
@@ -1001,7 +1020,7 @@
                     } else {
                         resolve({ success: true });
                     }
-                }, 800);
+                }, 1200);
             });
 
             const mqttResult = await mqttCheckPromise;
@@ -1009,7 +1028,7 @@
                 return mqttResult;
             }
 
-            // 3. Claim the room in Firestore
+            // 3. Claim room in Firestore & announce claim over MQTT
             if (db && currentUser) {
                 try {
                     const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'room_claims', cleanRoom);
@@ -1056,7 +1075,7 @@
             };
 
             sendBeat();
-            roomHeartbeatInterval = setInterval(sendBeat, 10000);
+            roomHeartbeatInterval = setInterval(sendBeat, 8000);
         }
 
         function startFirestorePositionListener() {
