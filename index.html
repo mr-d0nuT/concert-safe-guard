@@ -299,6 +299,7 @@
 
         </section>
 
+        <!-- RIGHT COLUMN: CONNECTED DEVICES & SOS -->
         <section class="lg:col-span-4 flex flex-col gap-4">
 
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
@@ -373,6 +374,7 @@
         </div>
     </div>
 
+    <!-- SAFETY TIPS MODAL -->
     <div id="safetyTipsModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-[110] flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
             <button onclick="document.getElementById('safetyTipsModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center transition">
@@ -404,6 +406,7 @@
         </div>
     </div>
 
+    <!-- JOIN REQUEST MODAL FOR MOBILE DEVICES -->
     <div id="joinGroupModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[80] flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-indigo-500/40 rounded-3xl max-w-md w-full p-6 shadow-2xl relative text-center">
             <button onclick="document.getElementById('joinGroupModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center transition" title="Cerrar">
@@ -441,6 +444,7 @@
         </div>
     </div>
 
+    <!-- SHARE MODAL WITH QR CODE -->
     <div id="shareModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
             <button onclick="closeShareModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center transition">
@@ -489,6 +493,7 @@
         </div>
     </div>
 
+    <!-- HOST ROOM CREATION & CLAIM MODAL -->
     <div id="hostRoomModal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[130] flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-indigo-500/40 rounded-3xl max-w-md w-full p-6 shadow-2xl relative text-center">
             <button id="closeHostRoomBtn" onclick="closeHostRoomModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center transition hidden" title="Cerrar">
@@ -525,7 +530,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -568,6 +573,7 @@
         let groupMembers = [];
         let memberMarkers = {};
         let removedMemberIds = new Set();
+        let firestoreUnsubscribe = null;
         
         let isAudioAlarmEnabled = true;
         let alarmOscillator = null;
@@ -915,13 +921,42 @@
                 return { success: true };
             }
 
+            await authReadyPromise;
+            const now = Date.now();
+            const STALE_THRESHOLD = 60 * 1000; // 60 seconds
+
+            // 1. Check Firestore first (DB Room Lock)
+            if (db && currentUser) {
+                try {
+                    const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'room_claims', cleanRoom);
+                    const docSnap = await getDoc(roomDocRef);
+
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        const isOtherHost = data.hostDeviceId && data.hostDeviceId !== myDeviceId;
+                        const isRecent = (now - (data.lastHeartbeat || 0)) < STALE_THRESHOLD;
+
+                        if (isOtherHost && isRecent) {
+                            const rivalName = data.hostName || 'otro Líder';
+                            return {
+                                success: false,
+                                reasonMsg: `La sala '${cleanRoom}' ya está siendo utilizada por ${rivalName}. Para unirte a su grupo, debes escanear su código QR.`
+                            };
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Firestore room claim check warning:", err);
+                }
+            }
+
+            // 2. Secondary MQTT P2P query check
             if (!mqttClient) {
                 initMqttSync();
             }
 
-            return new Promise((resolve) => {
+            const mqttCheckPromise = new Promise((resolve) => {
                 let isOccupied = false;
-                let rivalHostName = 'Otro Líder';
+                let rivalHostName = 'otro Líder';
                 let resolved = false;
 
                 const tempTopic = `concertsafeguard/v2/room_${cleanRoom}`;
@@ -930,7 +965,7 @@
                     if (topic === tempTopic) {
                         try {
                             const payload = JSON.parse(message.toString());
-                            if (payload && payload.type === 'claim_response' && payload.hostDeviceId && payload.hostDeviceId !== myDeviceId) {
+                            if (payload && (payload.type === 'claim_response' || payload.type === 'host_presence') && payload.hostDeviceId && payload.hostDeviceId !== myDeviceId) {
                                 isOccupied = true;
                                 if (payload.hostName) rivalHostName = payload.hostName;
                             }
@@ -938,7 +973,16 @@
                     }
                 };
 
-                const finishCheck = () => {
+                if (mqttClient && mqttClient.connected) {
+                    mqttClient.on('message', claimHandler);
+                    mqttClient.subscribe(tempTopic, { qos: 0 });
+                    mqttClient.publish(tempTopic, JSON.stringify({
+                        type: 'claim_query',
+                        senderDeviceId: myDeviceId
+                    }), { qos: 0 });
+                }
+
+                setTimeout(() => {
                     if (resolved) return;
                     resolved = true;
 
@@ -952,34 +996,42 @@
                     if (isOccupied) {
                         resolve({
                             success: false,
-                            reasonMsg: `La sala '${cleanRoom}' ya está siendo utilizada por ${rivalHostName}. Para unirte a su grupo, debes escanear su código QR.`
+                            reasonMsg: `La sala '${cleanRoom}' ya está activa y siendo utilizada por ${rivalHostName}. Para unirte a su grupo, debes escanear su código QR.`
                         });
                     } else {
                         resolve({ success: true });
                     }
-                };
-
-                const timer = setTimeout(finishCheck, 1000);
-
-                try {
-                    if (mqttClient) {
-                        mqttClient.on('message', claimHandler);
-                        mqttClient.subscribe(tempTopic, { qos: 0 });
-                        mqttClient.publish(tempTopic, JSON.stringify({
-                            type: 'claim_query',
-                            senderDeviceId: myDeviceId
-                        }), { qos: 0 });
-                    }
-                } catch(e) {
-                    console.warn("MQTT query send error:", e);
-                }
+                }, 800);
             });
+
+            const mqttResult = await mqttCheckPromise;
+            if (!mqttResult.success) {
+                return mqttResult;
+            }
+
+            // 3. Claim the room in Firestore
+            if (db && currentUser) {
+                try {
+                    const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'room_claims', cleanRoom);
+                    await setDoc(roomDocRef, {
+                        roomId: cleanRoom,
+                        hostDeviceId: myDeviceId,
+                        hostName: myRegisteredName || 'Líder GPS',
+                        lastHeartbeat: now,
+                        createdAt: now
+                    }, { merge: true });
+                } catch(e) {
+                    console.warn("Failed to set room claim in Firestore:", e);
+                }
+            }
+
+            return { success: true };
         }
 
         function startHostPresenceHeartbeat() {
             if (roomHeartbeatInterval) clearInterval(roomHeartbeatInterval);
             
-            roomHeartbeatInterval = setInterval(async () => {
+            const sendBeat = async () => {
                 if (isRoomClaimedByMe && activeGroupId) {
                     if (mqttClient && mqttClient.connected) {
                         const topic = `concertsafeguard/v2/room_${activeGroupId}`;
@@ -990,17 +1042,55 @@
                         }), { qos: 0 });
                     }
 
-                    if (db) {
+                    if (db && currentUser) {
                         try {
                             const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'room_claims', activeGroupId);
                             setDoc(roomDocRef, {
-                                lastActive: Date.now(),
-                                hostName: myRegisteredName || 'Líder GPS'
+                                hostDeviceId: myDeviceId,
+                                hostName: myRegisteredName || 'Líder GPS',
+                                lastHeartbeat: Date.now()
                             }, { merge: true }).catch(() => {});
                         } catch(e) {}
                     }
                 }
-            }, 10000);
+            };
+
+            sendBeat();
+            roomHeartbeatInterval = setInterval(sendBeat, 10000);
+        }
+
+        function startFirestorePositionListener() {
+            if (firestoreUnsubscribe) {
+                firestoreUnsubscribe();
+                firestoreUnsubscribe = null;
+            }
+
+            if (db && currentUser && activeGroupId) {
+                try {
+                    const positionsCol = collection(db, 'artifacts', appId, 'public', 'data', `positions_${activeGroupId}`);
+                    firestoreUnsubscribe = onSnapshot(positionsCol, (snapshot) => {
+                        snapshot.forEach((docSnap) => {
+                            const data = docSnap.data();
+                            if (removedMemberIds.has(docSnap.id)) return;
+                            if (docSnap.id === myDeviceId && !urlParams.get('joinGroup')) return;
+
+                            if (data && data.lat && data.lng) {
+                                groupMembersMap.set(docSnap.id, {
+                                    id: docSnap.id,
+                                    name: data.name || 'Dispositivo ' + docSnap.id.substring(0, 4),
+                                    lat: data.lat,
+                                    lng: data.lng,
+                                    battery: data.battery || 85,
+                                    updated: data.updated || Date.now(),
+                                    sos: !!data.sos,
+                                    color: '#' + Math.floor(Math.abs(Math.sin(docSnap.id.charCodeAt(0)) * 16777215)).toString(16).padStart(6, '0')
+                                });
+                            }
+                        });
+                        syncRosterAndMap();
+                    }, (err) => console.warn("Firestore snapshot info:", err));
+                } catch(e){}
+            }
         }
 
         function syncRosterAndMap() {
@@ -1569,10 +1659,22 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
 
-                signInAnonymously(auth).then(res => {
-                    currentUser = res.user;
-                    resolve(currentUser);
-                }).catch(() => resolve(null));
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    signInWithCustomToken(auth, __initial_auth_token).then(res => {
+                        currentUser = res.user;
+                        resolve(currentUser);
+                    }).catch(() => {
+                        signInAnonymously(auth).then(res => {
+                            currentUser = res.user;
+                            resolve(currentUser);
+                        }).catch(() => resolve(null));
+                    });
+                } else {
+                    signInAnonymously(auth).then(res => {
+                        currentUser = res.user;
+                        resolve(currentUser);
+                    }).catch(() => resolve(null));
+                }
 
                 onAuthStateChanged(auth, (u) => { if (u) currentUser = u; });
             } catch(e) {
@@ -1630,7 +1732,7 @@
 
             if (feedback) {
                 feedback.className = "p-3 rounded-xl text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 block";
-                feedback.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin mr-1"></i> Comprobando disponibilidad en tiempo real...`;
+                feedback.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin mr-1"></i> Comprobando disponibilidad de la sala en tiempo real...`;
             }
 
             try {
@@ -1662,12 +1764,14 @@
                     }
 
                     initMqttSync();
+                    startHostPresenceHeartbeat();
+                    startFirestorePositionListener();
                     syncRosterAndMap();
 
                     setTimeout(() => {
                         document.getElementById('hostRoomModal').classList.add('hidden');
                         showToastNotification(`🔒 Sala exclusiva activa: ${activeGroupId}`);
-                    }, 600);
+                    }, 500);
 
                 } else {
                     if (feedback) {
@@ -1958,46 +2062,20 @@
             window.startHostGpsTracking();
             initOrientationSensor();
             
-            authReadyPromise.catch(()=>{});
+            await authReadyPromise;
 
             if (urlParams.get('joinGroup')) {
                 initMqttSync();
+                startFirestorePositionListener();
                 document.getElementById('joinGroupModal').classList.remove('hidden');
                 document.getElementById('sosWidgetCard').classList.remove('hidden');
-                if (myRegisteredName) {
+                if (myRegisteredName && myRegisteredName !== 'Líder GPS') {
                     document.getElementById('joinNameInput').value = myRegisteredName;
                     document.getElementById('mobileActiveBanner').classList.remove('hidden');
                     document.getElementById('mobileBannerName').innerText = myRegisteredName;
                 }
             } else {
                 openHostRoomModal();
-            }
-
-            if (db && activeGroupId) {
-                try {
-                    const positionsCol = collection(db, 'artifacts', appId, 'public', 'data', `positions_${activeGroupId}`);
-                    onSnapshot(positionsCol, (snapshot) => {
-                        snapshot.forEach((docSnap) => {
-                            const data = docSnap.data();
-                            if (removedMemberIds.has(docSnap.id)) return;
-                            if (docSnap.id === myDeviceId && !urlParams.get('joinGroup')) return;
-
-                            if (data && data.lat && data.lng) {
-                                groupMembersMap.set(docSnap.id, {
-                                    id: docSnap.id,
-                                    name: data.name || 'Dispositivo ' + docSnap.id.substring(0, 4),
-                                    lat: data.lat,
-                                    lng: data.lng,
-                                    battery: data.battery || 85,
-                                    updated: data.updated || Date.now(),
-                                    sos: !!data.sos,
-                                    color: '#' + Math.floor(Math.abs(Math.sin(docSnap.id.charCodeAt(0)) * 16777215)).toString(16).padStart(6, '0')
-                                });
-                            }
-                        });
-                        syncRosterAndMap();
-                    }, (err) => console.warn("Firestore snapshot info:", err));
-                } catch(e){}
             }
 
             setInterval(() => {
