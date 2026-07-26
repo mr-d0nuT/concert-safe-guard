@@ -134,15 +134,14 @@
         <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-3">
                 <div class="w-11 h-11 rounded-2xl overflow-hidden border border-amber-500/30 flex items-center justify-center bg-slate-950 shadow-lg shadow-amber-500/10 flex-shrink-0" title="ConcertSafe Guard">
-                    <img src="logo_donut.jpg" alt="ConcertSafe Guard Donut Logo" class="w-full h-full object-cover rounded-xl" onerror="this.onerror=null; this.src='https://placehold.co/100x100/1e1b4b/e0e7ff?text=Donut';">
+                    <img src="logo_donut.png" alt="ConcertSafe Guard Donut Logo" class="w-full h-full object-cover rounded-xl" onerror="this.onerror=null; this.src='https://placehold.co/100x100/1e1b4b/e0e7ff?text=Donut';">
                 </div>
                 <div>
                     <h1 class="font-bold text-lg leading-tight tracking-wide text-white flex items-center gap-2">
                         ConcertSafe Guard
-                        <span id="cloudStatusBadge" class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-                            <span id="cloudStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                            <span id="cloudStatusText">Conectando...</span>
-                        </span>
+                        <button onclick="window.sendSosSignal()" class="text-[11px] font-black px-3 py-1 rounded-full bg-orange-500 hover:bg-orange-600 text-white border border-orange-400 flex items-center gap-1.5 shadow-lg shadow-orange-500/40 transition transform active:scale-95" title="Enviar Alerta SOS Inmediata">
+                            <i class="fa-solid fa-hand animate-pulse"></i> SOS
+                        </button>
                     </h1>
                     <p class="text-xs text-slate-400">Sala: <strong id="currentGroupIdDisplay" class="text-indigo-400 font-mono">Sin Configurar</strong></p>
                 </div>
@@ -325,17 +324,6 @@
 
             <div id="membersContainer" class="flex flex-col gap-3 overflow-y-auto max-h-[520px] pr-1">
                 <!-- Dynamically populated via JS -->
-            </div>
-
-            <div id="sosWidgetCard" class="bg-slate-900 border border-amber-500/30 rounded-2xl p-4 shadow-xl hidden">
-                <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                    <i class="fa-solid fa-circle-exclamation"></i> Botón de Auxilio Rápido
-                </h3>
-                <p class="text-xs text-slate-400 mb-3">Si te has separado, pulsa para mandar aviso directo de emergencia.</p>
-                <button onclick="window.sendSosSignal()" class="w-full py-3 bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center justify-center gap-2 transition transform active:scale-95 uppercase tracking-wide">
-                    <i class="fa-solid fa-hand text-base"></i>
-                    <span>¡Enviar Alerta SOS al Grupo!</span>
-                </button>
             </div>
 
         </section>
@@ -1653,7 +1641,6 @@
                 initMqttSync();
                 startFirestorePositionListener();
                 document.getElementById('joinGroupModal').classList.remove('hidden');
-                document.getElementById('sosWidgetCard').classList.remove('hidden');
                 if (myRegisteredName && myRegisteredName !== 'Líder GPS') {
                     document.getElementById('joinNameInput').value = myRegisteredName;
                     document.getElementById('mobileActiveBanner').classList.remove('hidden');
