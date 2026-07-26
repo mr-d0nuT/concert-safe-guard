@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ca" class="dark h-full bg-slate-950">
+<html lang="es" class="dark h-full bg-slate-950">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ConcertSafe Guard - Localitzador i Càmera RA</title>
+    <title>ConcertSafe Guard - Localizador Real en Vivo y Cámara RA</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,14 +13,7 @@
             theme: {
                 extend: {
                     colors: {
-                        brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            900: '#312e81',
-                        }
+                        brand: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 900: '#312e81' }
                     }
                 }
             }
@@ -41,91 +34,35 @@
     <script src="https://cdn.jsdelivr.net/npm/mqtt@4.3.7/dist/mqtt.min.js"></script>
 
     <style>
-        .leaflet-container {
-            background-color: #0f172a !important;
-            font-family: inherit;
-        }
+        .leaflet-container { background-color: #0f172a !important; font-family: inherit; }
+        .pulse-marker-parent { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); animation: pulse-ring 1.8s infinite cubic-bezier(0.66, 0, 0, 1); }
+        .pulse-marker-danger { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.9); animation: pulse-ring-danger 1s infinite cubic-bezier(0.66, 0, 0, 1); }
+        .pulse-marker-sos { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.95); animation: pulse-ring-sos 0.6s infinite cubic-bezier(0.66, 0, 0, 1); }
         
-        .pulse-marker-parent {
-            box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
-            animation: pulse-ring 1.8s infinite cubic-bezier(0.66, 0, 0, 1);
+        @keyframes blink-orange-sos { 
+            0%, 100% { background-color: #f97316; border-color: #fef08a; box-shadow: 0 0 30px rgba(249, 115, 22, 1); transform: scale(1.15); } 
+            50% { background-color: #ea580c; border-color: #ffffff; box-shadow: 0 0 45px rgba(255, 107, 0, 1); transform: scale(1); } 
         }
+        .sos-blinking-orange { animation: blink-orange-sos 0.6s infinite ease-in-out !important; }
         
-        .pulse-marker-danger {
-            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.9);
-            animation: pulse-ring-danger 1s infinite cubic-bezier(0.66, 0, 0, 1);
+        @keyframes slideDown {
+            from { transform: translateY(-20px) scale(0.95); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
         }
+        .animate-slide-down { animation: slideDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 
-        .pulse-marker-sos {
-            box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.95);
-            animation: pulse-ring-sos 0.6s infinite cubic-bezier(0.66, 0, 0, 1);
-        }
-
-        @keyframes blink-orange-sos {
-            0%, 100% { 
-                background-color: #f97316; 
-                border-color: #fef08a; 
-                box-shadow: 0 0 30px rgba(249, 115, 22, 1); 
-                transform: scale(1.15); 
-            }
-            50% { 
-                background-color: #ea580c; 
-                border-color: #ffffff; 
-                box-shadow: 0 0 45px rgba(255, 107, 0, 1); 
-                transform: scale(1); 
-            }
-        }
-
-        .sos-blinking-orange {
-            animation: blink-orange-sos 0.6s infinite ease-in-out !important;
-        }
-
-        @keyframes pulse-ring {
-            to { box-shadow: 0 0 0 20px rgba(99, 102, 241, 0); }
-        }
-        @keyframes pulse-ring-danger {
-            to { box-shadow: 0 0 0 25px rgba(239, 68, 68, 0); }
-        }
-        @keyframes pulse-ring-sos {
-            to { box-shadow: 0 0 0 35px rgba(249, 115, 22, 0); }
-        }
+        @keyframes pulse-ring { to { box-shadow: 0 0 0 20px rgba(99, 102, 241, 0); } }
+        @keyframes pulse-ring-danger { to { box-shadow: 0 0 0 25px rgba(239, 68, 68, 0); } }
+        @keyframes pulse-ring-sos { to { box-shadow: 0 0 0 35px rgba(249, 115, 22, 0); } }
 
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-
-        #arVideo {
-            object-fit: cover;
-            width: 100%;
-            height: 100%;
-        }
-
-        .ar-hud-grid {
-            background-image: 
-                radial-gradient(circle at center, rgba(99, 102, 241, 0.15) 0%, transparent 70%),
-                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 100% 100%, 40px 40px, 40px 40px;
-        }
-
-        .ar-badge {
-            transition: transform 0.15s ease-out, opacity 0.2s ease;
-            will-change: transform;
-        }
-
-        .animate-spin-slow {
-            animation: spin 8s linear infinite;
-        }
-
-        #mapContainer:fullscreen,
-        #mapContainer:-webkit-full-screen {
-            width: 100vw !important;
-            height: 100vh !important;
-            max-height: 100vh !important;
-            padding: 0 !important;
-            border-radius: 0 !important;
-            background-color: #0f172a !important;
-        }
+        #arVideo { object-fit: cover; width: 100%; height: 100%; }
+        .ar-hud-grid { background-image: radial-gradient(circle at center, rgba(99, 102, 241, 0.15) 0%, transparent 70%), linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px); background-size: 100% 100%, 40px 40px, 40px 40px; }
+        .ar-badge { transition: transform 0.15s ease-out, opacity 0.2s ease; will-change: transform; }
+        .animate-spin-slow { animation: spin 8s linear infinite; }
+        #mapContainer:fullscreen, #mapContainer:-webkit-full-screen { width: 100vw !important; height: 100vh !important; max-height: 100vh !important; padding: 0 !important; border-radius: 0 !important; background-color: #0f172a !important; }
     </style>
 </head>
 <body class="h-full font-sans text-slate-100 bg-slate-950 flex flex-col overflow-x-hidden selection:bg-indigo-500 selection:text-white">
@@ -137,31 +74,35 @@
                     <img src="logo_donut.png" alt="ConcertSafe Guard Donut Logo" class="w-full h-full object-cover rounded-xl" onerror="this.onerror=null; this.src='https://placehold.co/100x100/1e1b4b/e0e7ff?text=CS';">
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-tight tracking-wide text-white flex items-center gap-2">
+                    <h1 class="font-bold text-lg leading-tight tracking-wide text-white flex items-center gap-1 sm:gap-2">
                         ConcertSafe Guard
-                        <!-- Nuevo Botón SOS Naranja en la cabecera -->
-                        <button onclick="window.sendSosSignal()" class="bg-orange-500 hover:bg-orange-400 text-slate-950 font-black px-3 py-1 rounded-xl text-xs flex items-center gap-1 shadow-lg shadow-orange-500/30 transition active:scale-95 border border-orange-300 ml-1">
+                        <!-- Botón SOS -->
+                        <button onclick="window.sendSosSignal()" class="bg-orange-500 hover:bg-orange-400 text-slate-950 font-black px-2.5 py-1 rounded-xl text-xs flex items-center gap-1 shadow-lg shadow-orange-500/30 transition active:scale-95 border border-orange-300 ml-1">
                             <i class="fa-solid fa-hand"></i> SOS
                         </button>
+                        <!-- Botón Chat -->
+                        <button onclick="window.openChatModal()" class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-black px-2.5 py-1 rounded-xl text-xs flex items-center gap-1 shadow-lg shadow-sky-500/30 transition active:scale-95 border border-sky-300 ml-0.5">
+                            <i class="fa-solid fa-comment-dots"></i> Chat
+                        </button>
                     </h1>
-                    <p class="text-xs text-slate-400"><span data-i18n="room_label">Sala:</span> <strong id="currentGroupIdDisplay" class="text-indigo-400 font-mono" data-i18n="unconfigured">Sense Configurar</strong></p>
+                    <p class="text-xs text-slate-400"><span data-i18n="room_label">Sala:</span> <strong id="currentGroupIdDisplay" class="text-indigo-400 font-mono" data-i18n="unconfigured">Sin Configurar</strong></p>
                 </div>
             </div>
 
             <div class="flex items-center gap-2 flex-wrap">
                 <button onclick="window.editHostName()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition active:scale-95" title="Editar tu nombre visible">
                     <i class="fa-solid fa-user-pen text-indigo-400"></i>
-                    <span><span data-i18n="my_name">El meu nom:</span> <strong id="hostNameDisplay" class="text-indigo-300 font-semibold">Líder GPS</strong></span>
+                    <span><span data-i18n="my_name">Mi nombre:</span> <strong id="hostNameDisplay" class="text-indigo-300 font-semibold">Líder GPS</strong></span>
                 </button>
 
                 <button onclick="window.openARView()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition transform active:scale-95">
                     <i class="fa-solid fa-camera text-sm animate-pulse"></i>
-                    <span data-i18n="cam_ra">Càmera RA</span>
+                    <span data-i18n="cam_ra">Cámara RA</span>
                 </button>
 
-                <!-- Selector de Idiomas -->
+                <!-- Selector de Idiomas Dinámico -->
                 <div class="relative">
-                    <button id="langToggleBtn" onclick="window.toggleLangMenu()" class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition active:scale-95" title="Canviar Idioma">
+                    <button id="langToggleBtn" onclick="window.toggleLangMenu()" class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition active:scale-95" title="Cambiar Idioma">
                         <span id="currentLangIcon" class="text-base leading-none flex items-center">
                             <!-- Senyera SVG Default -->
                             <svg class="w-5 h-3.5 rounded-sm" viewBox="0 0 16 12" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="12" fill="#FFC400"/><rect y="1.33" width="16" height="1.33" fill="#DA121A"/><rect y="4" width="16" height="1.33" fill="#DA121A"/><rect y="6.66" width="16" height="1.33" fill="#DA121A"/><rect y="9.33" width="16" height="1.33" fill="#DA121A"/></svg>
@@ -200,10 +141,10 @@
         <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
             <div class="flex items-center gap-2 text-xs font-bold">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-                <span>📡 <span data-i18n="transmitting">TRANSMETENT GPS AL GRUP</span> (<span id="mobileBannerName" class="text-indigo-300">...</span>)</span>
+                <span>📡 <span data-i18n="transmitting">TRANSMITIENDO GPS AL GRUPO</span> (<span id="mobileBannerName" class="text-indigo-300">...</span>)</span>
             </div>
             <button onclick="window.openJoinModalAgain()" class="text-[11px] bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-lg font-bold transition" data-i18n="edit_name">
-                Editar Nom
+                Editar Nombre
             </button>
         </div>
     </div>
@@ -215,8 +156,8 @@
                     <i class="fa-solid fa-triangle-exclamation"></i>
                 </div>
                 <div>
-                    <p class="font-extrabold text-sm sm:text-base tracking-wide" id="alertBannerTitle" data-i18n="perimeter_alert">¡ALERTA DE PERÍMETRE SEGUR!</p>
-                    <p class="text-xs sm:text-sm text-rose-100" id="alertBannerDetail">Un integrant del grup ha sobrepassat el radi configurat.</p>
+                    <p class="font-extrabold text-sm sm:text-base tracking-wide" id="alertBannerTitle" data-i18n="perimeter_alert">¡ALERTA DE PERÍMETRO SEGURA!</p>
+                    <p class="text-xs sm:text-sm text-rose-100" id="alertBannerDetail">Un integrante del grupo ha sobrepasado el radio configurado.</p>
                 </div>
             </div>
             <div class="flex items-center gap-2 flex-wrap">
@@ -235,10 +176,10 @@
                 </div>
                 <div>
                     <p class="font-black text-sm sm:text-base tracking-wide uppercase text-slate-950 flex items-center gap-2" id="sosBannerTitle">
-                        ¡ALERTA SOS D'AUXILI!
+                        ¡ALERTA SOS DE AUXILIO!
                     </p>
                     <p class="text-xs sm:text-sm text-slate-950 font-bold" id="sosBannerDetail">
-                        Un dispositiu ha sol·licitat ajuda mitjançant el botó SOS.
+                        Un dispositivo ha solicitado ayuda mediante el botón SOS.
                     </p>
                 </div>
             </div>
@@ -260,9 +201,9 @@
                     <div>
                         <div class="flex justify-between items-center mb-1">
                             <label class="text-xs font-medium text-slate-400">
-                                <i class="fa-solid fa-draw-polygon text-indigo-400 mr-1"></i><span data-i18n="safe_radius">Radi Segur (Perímetre)</span>
+                                <i class="fa-solid fa-draw-polygon text-indigo-400 mr-1"></i><span data-i18n="safe_radius">Radio Seguro (Perímetro)</span>
                             </label>
-                            <span id="radiusDisplay" class="text-xs font-extrabold text-indigo-400 bg-indigo-950 px-2 py-0.5 rounded-md border border-indigo-800/50">50 <span data-i18n="meters">metres</span></span>
+                            <span id="radiusDisplay" class="text-xs font-extrabold text-indigo-400 bg-indigo-950 px-2 py-0.5 rounded-md border border-indigo-800/50">50 <span data-i18n="meters">metros</span></span>
                         </div>
                         <input type="range" id="radiusRange" min="10" max="500" step="5" value="50" oninput="window.updateGeofenceRadius(this.value)" class="w-full accent-indigo-500 bg-slate-950 h-2 rounded-lg cursor-pointer">
                     </div>
@@ -270,7 +211,7 @@
                     <div class="flex items-center gap-2">
                         <button onclick="window.centerOnParent()" class="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-indigo-500/50 text-slate-200 text-xs rounded-xl font-bold flex items-center justify-center gap-2 transition active:scale-95 shadow-md">
                             <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-                            <i class="fa-solid fa-crosshairs text-indigo-400 text-sm"></i> <span data-i18n="center_gps">Centrar la meva Ubicació</span>
+                            <i class="fa-solid fa-crosshairs text-indigo-400 text-sm"></i> <span data-i18n="center_gps">Centrar mi Ubicación</span>
                         </button>
                     </div>
                 </div>
@@ -297,21 +238,21 @@
                         <i class="fa-solid fa-user-shield text-indigo-400"></i> <span id="mapHostNameBadge">Líder GPS</span>
                     </span>
                     <span id="headingBadge" class="bg-slate-950/90 backdrop-blur border border-slate-700 text-indigo-300 text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 font-mono">
-                        <i class="fa-solid fa-compass text-xs text-indigo-400"></i> <span id="headingText">Rumb: 0°</span>
+                        <i class="fa-solid fa-compass text-xs text-indigo-400"></i> <span id="headingText">Rumbo: 0°</span>
                     </span>
                     <span class="bg-slate-950/90 backdrop-blur border border-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-2 font-medium">
                         <span id="statusCircle" class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-                        <span id="insideCountBadge">0 <span data-i18n="devices_connected">Dispositius Connectats</span></span>
+                        <span id="insideCountBadge">0 <span data-i18n="devices_connected">Dispositivos Conectados</span></span>
                     </span>
                     <span id="gpsAccuracyBadge" class="bg-slate-950/90 backdrop-blur border border-slate-700 text-amber-300 text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 font-mono">
-                        <i class="fa-solid fa-bullseye text-xs"></i> <span data-i18n="accuracy">Precisió:</span> <span id="gpsAccuracyText">...</span>
+                        <i class="fa-solid fa-bullseye text-xs"></i> <span data-i18n="accuracy">Precisión:</span> <span id="gpsAccuracyText">...</span>
                     </span>
                 </div>
 
                 <div class="absolute bottom-6 right-6 z-10 pointer-events-auto">
                     <button onclick="window.openARView()" class="px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-600 to-indigo-600 hover:from-emerald-400 hover:to-indigo-500 text-white font-extrabold text-xs shadow-2xl shadow-emerald-500/50 flex items-center gap-2 transition transform active:scale-90 border border-emerald-400/40">
                         <i class="fa-solid fa-camera text-base"></i>
-                        <span data-i18n="open_ar">Obrir Càmera RA</span>
+                        <span data-i18n="open_ar">Abrir Cámara RA</span>
                     </button>
                 </div>
             </div>
@@ -325,20 +266,20 @@
                 <div class="flex items-center justify-between mb-2">
                     <h2 class="font-bold text-slate-100 text-base flex items-center gap-2">
                         <i class="fa-solid fa-users text-indigo-400"></i>
-                        <span data-i18n="devices_connected">Dispositius Connectats</span> (<span id="membersCountText">0</span>)
+                        <span data-i18n="devices_connected">Dispositivos Conectados</span> (<span id="membersCountText">0</span>)
                     </h2>
                     <div class="flex items-center gap-2">
                         <button onclick="window.openSafetyTipsModal()" class="text-[11px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/40 font-semibold hover:bg-indigo-500/30 transition" data-i18n="tips">
-                            Consells
+                            Consejos
                         </button>
                         <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-lg border border-emerald-500/20 font-semibold" id="syncStatus">
-                            <i class="fa-solid fa-satellite-dish text-emerald-400 mr-1 text-[10px] animate-pulse"></i><span data-i18n="live">En Viu</span>
+                            <i class="fa-solid fa-satellite-dish text-emerald-400 mr-1 text-[10px] animate-pulse"></i><span data-i18n="live">En Vivo</span>
                         </span>
                     </div>
                 </div>
                 
                 <p class="text-xs text-slate-400 leading-relaxed">
-                    <span data-i18n="room_code">Codi de Sala:</span> <strong class="text-indigo-300 font-mono text-sm font-black" id="groupCodeBadgeInline">...</strong>
+                    <span data-i18n="room_code">Código de Sala:</span> <strong class="text-indigo-300 font-mono text-sm font-black" id="groupCodeBadgeInline">...</strong>
                 </p>
             </div>
 
@@ -350,6 +291,28 @@
 
     </main>
 
+    <!-- CHAT MODAL -->
+    <div id="chatModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-[140] flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-sky-500/40 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="document.getElementById('chatModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="w-12 h-12 bg-sky-500/20 text-sky-400 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3 border border-sky-500/30">
+                <i class="fa-solid fa-bullhorn"></i>
+            </div>
+            <h3 class="text-base font-extrabold text-white text-center mb-1" data-i18n="chat_title">Enviar Mensaje al Grupo</h3>
+            <p class="text-[11px] text-slate-400 text-center mb-4">El mensaje aparecerá en la pantalla de todos los miembros al instante.</p>
+            
+            <form onsubmit="window.sendChatMessage(event)">
+                <textarea id="chatMessageInput" required rows="3" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-sky-500 resize-none font-medium mb-4" placeholder="Escribe tu mensaje aquí..."></textarea>
+                <button type="submit" class="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-paper-plane"></i> <span data-i18n="chat_send">Enviar Mensaje</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- AR VIEW MODAL -->
     <div id="arCameraModal" class="fixed inset-0 z-[120] bg-slate-950 hidden flex flex-col">
         <div class="relative flex-1 w-full h-full overflow-hidden bg-black">
             <video id="arVideo" autoplay playsinline muted class="w-full h-full object-cover"></video>
@@ -359,7 +322,7 @@
             <div class="absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-auto">
                 <div class="bg-slate-950/80 backdrop-blur border border-slate-700/80 px-3 py-1.5 rounded-2xl flex items-center gap-2">
                     <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-                    <span id="arHeadingText" class="text-xs font-mono font-bold text-slate-200" data-i18n="cam_ra_active">Càmera RA Activa</span>
+                    <span id="arHeadingText" class="text-xs font-mono font-bold text-slate-200" data-i18n="cam_ra_active">Cámara RA Activa</span>
                 </div>
                 <button onclick="window.closeARView()" class="w-10 h-10 rounded-full bg-slate-950/80 backdrop-blur border border-slate-700 text-slate-200 hover:text-white flex items-center justify-center shadow-xl transition active:scale-90">
                     <i class="fa-solid fa-xmark text-lg"></i>
@@ -391,25 +354,25 @@
             <div class="w-12 h-12 bg-indigo-500/20 text-indigo-400 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3 border border-indigo-500/30">
                 <i class="fa-solid fa-shield-cat"></i>
             </div>
-            <h3 class="text-base font-extrabold text-white text-center mb-3" data-i18n="tips_title">Protocol Obligatori Anti-Pèrdua</h3>
+            <h3 class="text-base font-extrabold text-white text-center mb-3" data-i18n="tips_title">Protocolo Obligatorio Anti-Pérdida</h3>
             
             <ul class="space-y-2.5 text-xs text-slate-300 mb-5">
                 <li class="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950 border border-slate-800">
                     <i class="fa-solid fa-check text-emerald-400 mt-0.5"></i>
-                    <span data-i18n="tip_1"><strong>1. Polsera amb Telèfon:</strong> Escriu el teu número mòbil amb retolador indeleble a la polsera del menor.</span>
+                    <span data-i18n="tip_1"><strong>1. Pulsera con Teléfono:</strong> Escribe tu número móvil con rotulador indeleble en la pulsera del menor.</span>
                 </li>
                 <li class="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950 border border-slate-800">
                     <i class="fa-solid fa-check text-emerald-400 mt-0.5"></i>
-                    <span data-i18n="tip_2"><strong>2. Punt de Trobada Fix:</strong> Acorda un lloc visible en entrar (p. ex., sota el cartell d'Info).</span>
+                    <span data-i18n="tip_2"><strong>2. Punto de Encuentro Fijo:</strong> Acuerda un lugar visible al entrar (p. ej., bajo el cartel de Info).</span>
                 </li>
                 <li class="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950 border border-slate-800">
                     <i class="fa-solid fa-check text-emerald-400 mt-0.5"></i>
-                    <span data-i18n="tip_3"><strong>3. Foto Actualitzada:</strong> Fes-los una foto de cos sencer just abans d'entrar per saber exacta la roba que porten.</span>
+                    <span data-i18n="tip_3"><strong>3. Foto Actualizada:</strong> Hazles una foto de cuerpo entero justo antes de entrar para saber exacta la ropa que llevan.</span>
                 </li>
             </ul>
 
             <button onclick="document.getElementById('safetyTipsModal').classList.add('hidden')" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg transition" data-i18n="understood">
-                Entès
+                Entendido
             </button>
         </div>
     </div>
@@ -425,28 +388,28 @@
                 <i class="fa-solid fa-location-crosshairs"></i>
             </div>
 
-            <h2 class="text-xl font-extrabold text-white mb-1 tracking-wide" data-i18n="transmit_gps">Transmetre GPS al Grup</h2>
+            <h2 class="text-xl font-extrabold text-white mb-1 tracking-wide" data-i18n="transmit_gps">Transmitir GPS al Grupo</h2>
             <p class="text-xs text-slate-300 mb-4 leading-relaxed">
-                <span data-i18n="room_code">Codi de sala:</span> <strong id="modalGroupIdLabel" class="text-indigo-400 font-mono font-bold">...</strong>
+                <span data-i18n="room_code">Código de sala:</span> <strong id="modalGroupIdLabel" class="text-indigo-400 font-mono font-bold">...</strong>
             </p>
 
             <form id="joinForm" onsubmit="window.handleDeviceRegistration(event)" class="space-y-4 text-left">
                 <div>
-                    <label class="block text-xs font-bold text-slate-300 mb-1.5" data-i18n="member_name_label">Nom / Motiu de l'integrant:</label>
+                    <label class="block text-xs font-bold text-slate-300 mb-1.5" data-i18n="member_name_label">Nombre / Apodo del integrante:</label>
                     <input type="text" id="joinNameInput" required placeholder="Ej: Lucas, Sofía, Marta..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 font-medium">
                 </div>
 
                 <div id="mobileLiveStatus" class="p-3 bg-slate-950 border border-indigo-500/40 rounded-xl text-xs space-y-1">
                     <div class="flex items-center justify-between text-indigo-300 font-bold">
-                        <span><i id="syncPulseDot" class="fa-solid fa-signal text-amber-400 mr-1"></i> <span data-i18n="gps_transmission">Transmissió GPS</span></span>
-                        <span id="mobileSyncCount" class="text-[10px] bg-indigo-900/60 px-2 py-0.5 rounded text-indigo-200">0 enviaments</span>
+                        <span><i id="syncPulseDot" class="fa-solid fa-signal text-amber-400 mr-1"></i> <span data-i18n="gps_transmission">Transmisión GPS</span></span>
+                        <span id="mobileSyncCount" class="text-[10px] bg-indigo-900/60 px-2 py-0.5 rounded text-indigo-200">0 envíos</span>
                     </div>
-                    <p class="text-[11px] text-slate-400" id="mobileLastSyncTime">Escriu el teu nom per començar a transmetre...</p>
+                    <p class="text-[11px] text-slate-400" id="mobileLastSyncTime">Escribe tu nombre para empezar a transmitir...</p>
                 </div>
 
                 <button type="submit" id="grantPermissionBtn" class="w-full py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-extrabold text-sm rounded-xl shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 transition transform active:scale-95">
                     <i class="fa-solid fa-location-dot"></i>
-                    <span data-i18n="activate_transmit">¡Activar i Transmetre GPS Ja!</span>
+                    <span data-i18n="activate_transmit">¡Activar y Transmitir GPS Ya!</span>
                 </button>
             </form>
         </div>
@@ -463,32 +426,32 @@
                 <div class="w-12 h-12 bg-indigo-600/20 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-indigo-500/30">
                     <i class="fa-solid fa-qrcode text-2xl"></i>
                 </div>
-                <h3 class="text-lg font-extrabold text-white" data-i18n="link_phone">Vincular Telèfon Integrant</h3>
+                <h3 class="text-lg font-extrabold text-white" data-i18n="link_phone">Vincular Teléfono Integrante</h3>
                 <p class="text-xs text-slate-400 mt-1 leading-relaxed" data-i18n="scan_qr_desc">
-                    Escaneja el codi QR amb la càmera del dispositiu a rastrejar.
+                    Escanea el código QR con la cámara del dispositivo a rastrear.
                 </p>
             </div>
 
             <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 mb-4 flex flex-col items-center gap-2">
                 <div id="qrcode" class="bg-white p-2.5 rounded-2xl shadow-xl min-w-[150px] min-h-[150px] flex items-center justify-center"></div>
                 <p class="text-xs text-indigo-300 font-medium">
-                    <i class="fa-solid fa-camera mr-1"></i> <span data-i18n="point_camera">Apunta amb la càmera de l'altre telèfon</span>
+                    <i class="fa-solid fa-camera mr-1"></i> <span data-i18n="point_camera">Apunta con la cámara del otro teléfono</span>
                 </p>
             </div>
 
             <div class="space-y-3">
                 <div class="p-3 bg-slate-950 border border-indigo-500/30 rounded-xl flex items-center justify-between">
                     <div>
-                        <span class="text-[10px] text-slate-400 uppercase font-bold block" data-i18n="short_code">Codi de Sala Curt:</span>
+                        <span class="text-[10px] text-slate-400 uppercase font-bold block" data-i18n="short_code">Código de Sala Corto:</span>
                         <strong id="modalGroupCodeText" class="text-indigo-400 font-mono text-base font-extrabold tracking-wider">...</strong>
                     </div>
                     <button onclick="window.promptManualGroupCode()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700" data-i18n="change_room">
-                        Canviar Sala
+                        Cambiar Sala
                     </button>
                 </div>
 
                 <div>
-                    <label class="text-xs font-semibold text-slate-400 mb-1 block" data-i18n="copy_link">O copia l'enllaç directe:</label>
+                    <label class="text-xs font-semibold text-slate-400 mb-1 block" data-i18n="copy_link">O copia el enlace directo:</label>
                     <div class="flex items-center gap-2">
                         <input id="groupCodeInput" readonly value="" class="bg-slate-950 border border-slate-800 text-indigo-400 font-mono text-xs text-center rounded-xl p-3 flex-1 select-all font-semibold">
                         <button onclick="window.copyGroupLink()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-3 rounded-xl transition flex items-center gap-1.5 active:scale-95 shadow-md">
@@ -501,7 +464,7 @@
         </div>
     </div>
 
-    <!-- HOST ROOM CREATION & CLAIM MODAL -->
+    <!-- HOST ROOM CREATION MODAL -->
     <div id="hostRoomModal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[130] flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-indigo-500/40 rounded-3xl max-w-md w-full p-6 shadow-2xl relative text-center">
             <button id="closeHostRoomBtn" onclick="window.closeHostRoomModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center transition hidden" title="Cerrar">
@@ -514,23 +477,23 @@
 
             <h2 class="text-xl font-black text-white mb-1 tracking-wide" data-i18n="create_room_title">Crear Sala Privada Única</h2>
             <p class="text-xs text-slate-300 mb-5 leading-relaxed" data-i18n="create_room_desc">
-                Introdueix un nom exclusiu per a la teva sala de monitorització. Si la sala ja està activa amb un altre líder, només s'hi podrà ingressar escanejant el seu codi QR.
+                Introduce un nombre exclusivo para tu sala de monitoreo. Si la sala ya está activa con otro líder, solo se podrá ingresar escaneando su código QR.
             </p>
 
             <form id="hostRoomForm" onsubmit="window.handleHostRoomSubmit(event)" class="space-y-4 text-left">
                 <div>
                     <label class="block text-xs font-bold text-slate-300 mb-1.5">
-                        <i class="fa-solid fa-key text-indigo-400 mr-1"></i><span data-i18n="room_name_label">Nom de la Sala:</span>
+                        <i class="fa-solid fa-key text-indigo-400 mr-1"></i><span data-i18n="room_name_label">Nombre de la Sala:</span>
                     </label>
                     <input type="text" id="hostRoomNameInput" required placeholder="Ej: FamiliaPerez2026..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono font-bold uppercase tracking-wider">
-                    <p class="text-[11px] text-slate-400 mt-1" data-i18n="room_hint">Suggeriment: Usa un nom personalitzat únic amb el teu cognom o data.</p>
+                    <p class="text-[11px] text-slate-400 mt-1" data-i18n="room_hint">Sugerencia: Usa un nombre personalizado único con tu apellido o fecha.</p>
                 </div>
 
                 <div id="roomClaimFeedback" class="hidden p-3 rounded-xl text-xs font-medium flex items-center gap-2 border"></div>
 
                 <button type="submit" id="claimRoomSubmitBtn" class="w-full py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 transition transform active:scale-95">
                     <i class="fa-solid fa-shield-check text-sm"></i>
-                    <span data-i18n="verify_register">VERIFICAR I REGISTRAR SALA</span>
+                    <span data-i18n="verify_register">VERIFICAR Y REGISTRAR SALA</span>
                 </button>
             </form>
         </div>
@@ -608,7 +571,8 @@
                 create_room_desc: "Introdueix un nom exclusiu per a la teva sala de monitorització. Si la sala ja està activa amb un altre líder, només s'hi podrà ingressar escanejant el seu codi QR.",
                 room_name_label: "Nom de la Sala:", room_hint: "Suggeriment: Usa un nom personalitzat únic amb el teu cognom o data.",
                 verify_register: "VERIFICAR I REGISTRAR SALA", waiting_signal: "Esperant senyal a la sala",
-                scan_qr_msg: "Obre la càmera de l'altre telèfon i escaneja el QR per vincular-lo.", view_qr: "Veure Codi QR"
+                scan_qr_msg: "Obre la càmera de l'altre telèfon i escaneja el QR per vincular-lo.", view_qr: "Veure Codi QR",
+                chat_btn: "Xat", chat_title: "Enviar Missatge al Grup", chat_send: "Enviar Missatge", chat_understood: "Tancar i eliminar missatge", chat_says: "diu:"
             },
             es: {
                 room_label: "Sala:", unconfigured: "Sin Configurar", my_name: "Mi nombre:", cam_ra: "Cámara RA",
@@ -629,7 +593,8 @@
                 create_room_desc: "Introduce un nombre exclusivo para tu sala de monitoreo. Si la sala ya está activa con otro líder, solo se podrá ingresar escaneando su código QR.",
                 room_name_label: "Nombre de la Sala:", room_hint: "Sugerencia: Usa un nombre personalizado único con tu apellido o fecha.",
                 verify_register: "VERIFICAR Y REGISTRAR SALA", waiting_signal: "Esperando señal en la sala",
-                scan_qr_msg: "Abre la cámara del otro teléfono y escanea el QR para vincularlo.", view_qr: "Ver Código QR"
+                scan_qr_msg: "Abre la cámara del otro teléfono y escanea el QR para vincularlo.", view_qr: "Ver Código QR",
+                chat_btn: "Chat", chat_title: "Enviar Mensaje al Grupo", chat_send: "Enviar Mensaje", chat_understood: "Cerrar y eliminar mensaje", chat_says: "dice:"
             },
             en: {
                 room_label: "Room:", unconfigured: "Not Configured", my_name: "My name:", cam_ra: "AR Camera",
@@ -650,7 +615,8 @@
                 create_room_desc: "Enter a unique name for your monitoring room. If the room is already active with another leader, you can only enter by scanning their QR code.",
                 room_name_label: "Room Name:", room_hint: "Hint: Use a unique custom name with your last name or date.",
                 verify_register: "VERIFY AND REGISTER ROOM", waiting_signal: "Waiting for signal in room",
-                scan_qr_msg: "Open the other phone's camera and scan the QR to link it.", view_qr: "View QR Code"
+                scan_qr_msg: "Open the other phone's camera and scan the QR to link it.", view_qr: "View QR Code",
+                chat_btn: "Chat", chat_title: "Send Message to Group", chat_send: "Send Message", chat_understood: "Close & delete message", chat_says: "says:"
             },
             fr: {
                 room_label: "Salle:", unconfigured: "Non Configuré", my_name: "Mon nom:", cam_ra: "Caméra RA",
@@ -671,7 +637,8 @@
                 create_room_desc: "Saisissez un nom unique pour votre salle de surveillance. Si la salle est déjà active avec un autre leader, vous ne pourrez y accéder qu'en scannant son code QR.",
                 room_name_label: "Nom de la Salle:", room_hint: "Astuce: Utilisez un nom personnalisé unique avec votre nom de famille ou la date.",
                 verify_register: "VÉRIFIER ET ENREGISTRER LA SALLE", waiting_signal: "En attente de signal dans la salle",
-                scan_qr_msg: "Ouvrez l'appareil photo de l'autre téléphone et scannez le QR pour le lier.", view_qr: "Voir le Code QR"
+                scan_qr_msg: "Ouvrez l'appareil photo de l'autre téléphone et scannez le QR pour le lier.", view_qr: "Voir le Code QR",
+                chat_btn: "Chat", chat_title: "Envoyer un message au groupe", chat_send: "Envoyer le message", chat_understood: "Fermer et supprimer le message", chat_says: "dit:"
             },
             de: {
                 room_label: "Raum:", unconfigured: "Nicht Konfiguriert", my_name: "Mein Name:", cam_ra: "AR-Kamera",
@@ -692,7 +659,8 @@
                 create_room_desc: "Geben Sie einen eindeutigen Namen für Ihren Überwachungsraum ein. Wenn der Raum bereits bei einem anderen Leiter aktiv ist, können Sie ihn nur betreten, indem Sie dessen QR-Code scannen.",
                 room_name_label: "Raumname:", room_hint: "Tipp: Verwenden Sie einen eindeutigen benutzerdefinierten Namen mit Ihrem Nachnamen oder Datum.",
                 verify_register: "RAUM ÜBERPRÜFEN UND REGISTRIEREN", waiting_signal: "Warten auf Signal im Raum",
-                scan_qr_msg: "Öffnen Sie die Kamera des anderen Telefons und scannen Sie den QR, um es zu verbinden.", view_qr: "QR-Code Anzeigen"
+                scan_qr_msg: "Öffnen Sie die Kamera des anderen Telefons und scannen Sie den QR, um es zu verbinden.", view_qr: "QR-Code Anzeigen",
+                chat_btn: "Chat", chat_title: "Nachricht an Gruppe senden", chat_send: "Nachricht senden", chat_understood: "Nachricht schließen & löschen", chat_says: "sagt:"
             },
             zh: {
                 room_label: "房间:", unconfigured: "未配置", my_name: "我的名字:", cam_ra: "AR相机",
@@ -713,7 +681,8 @@
                 create_room_desc: "为您的监控房间输入一个独特的名称。如果该房间已被另一位领导者激活，您只能通过扫描他们的QR码来进入。",
                 room_name_label: "房间名称:", room_hint: "提示: 使用包含您的姓氏或日期的独特自定义名称。",
                 verify_register: "验证并注册房间", waiting_signal: "在房间中等待信号",
-                scan_qr_msg: "打开另一部手机的相机并扫描QR码以进行链接。", view_qr: "查看QR码"
+                scan_qr_msg: "打开另一部手机的相机并扫描QR码以进行链接。", view_qr: "查看QR码",
+                chat_btn: "聊天", chat_title: "发送消息给群组", chat_send: "发送消息", chat_understood: "关闭并删除消息", chat_says: "说:"
             }
         };
 
@@ -754,17 +723,12 @@
             
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
-                if (t[key]) {
-                    el.innerHTML = t[key];
-                }
+                if (t[key]) el.innerHTML = t[key];
             });
 
             const insideCountBadge = document.getElementById('insideCountBadge');
-            if(insideCountBadge) {
-                insideCountBadge.innerHTML = `${groupMembers.length} <span data-i18n="devices_connected">${t.devices_connected}</span>`;
-            }
-
-            renderRoster(); // Updates dynamic internal texts
+            if(insideCountBadge) insideCountBadge.innerHTML = `${groupMembers.length} <span data-i18n="devices_connected">${t.devices_connected}</span>`;
+            renderRoster();
         };
 
         // DEFENSIVE FIREBASE INITIALIZATION
@@ -929,6 +893,74 @@
             showToastNotification(`Dispositivo desvinculado: ${name}`);
         };
 
+        // CHAT INTERFACE FUNCTIONS
+        window.openChatModal = function() {
+            document.getElementById('chatModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('chatMessageInput').focus(), 100);
+        };
+
+        window.sendChatMessage = function(e) {
+            e.preventDefault();
+            const input = document.getElementById('chatMessageInput');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            if (mqttClient && mqttClient.connected && activeGroupId) {
+                mqttClient.publish(`concertsafeguard/v2/room_${activeGroupId}`, JSON.stringify({
+                    type: 'chat', id: myDeviceId, name: myRegisteredName || 'Usuario', msgId: Date.now().toString(), text: text
+                }), { qos: 0 });
+            }
+            
+            input.value = '';
+            document.getElementById('chatModal').classList.add('hidden');
+            showToastNotification("Mensaje enviado al grupo.");
+        };
+
+        window.dismissChatMessage = function(msgId) {
+            const el = document.getElementById('chatMsg_' + msgId);
+            if (el) el.remove();
+        };
+
+        window.displayChatAlert = function(senderName, text, msgId) {
+            const containerId = 'chatAlertsContainer';
+            let container = document.getElementById(containerId);
+            if (!container) {
+                container = document.createElement('div');
+                container.id = containerId;
+                container.className = "fixed top-24 left-1/2 -translate-x-1/2 w-full max-w-[90%] sm:max-w-md z-[200] flex flex-col gap-3 pointer-events-none";
+                document.body.appendChild(container);
+            }
+
+            const t = window.translations[window.currentLang] || window.translations['ca'];
+
+            const alertEl = document.createElement('div');
+            alertEl.id = 'chatMsg_' + msgId;
+            alertEl.className = "bg-sky-900 border border-sky-400 text-white p-4 rounded-2xl shadow-[0_0_30px_rgba(14,165,233,0.4)] flex flex-col pointer-events-auto transform transition-all animate-slide-down";
+            alertEl.innerHTML = `
+                <div class="flex items-center justify-between mb-2 pb-2 border-b border-sky-700/50">
+                    <span class="text-xs font-black text-sky-300 flex items-center gap-1.5"><i class="fa-solid fa-comment-dots"></i> ${senderName} <span>${t.chat_says || 'dice:'}</span></span>
+                    <button onclick="window.dismissChatMessage('${msgId}')" class="w-7 h-7 rounded-full bg-sky-800 hover:bg-sky-700 flex items-center justify-center text-sky-200 transition active:scale-90">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <p class="text-sm font-semibold leading-relaxed mb-3">${text}</p>
+                <button onclick="window.dismissChatMessage('${msgId}')" class="w-full py-2.5 bg-sky-700 hover:bg-sky-600 text-white text-xs font-bold rounded-xl transition shadow-md active:scale-95 flex items-center justify-center gap-2"><i class="fa-solid fa-check"></i> <span>${t.chat_understood || 'Cerrar y eliminar mensaje'}</span></button>
+            `;
+            container.appendChild(alertEl);
+            
+            if (isAudioAlarmEnabled) {
+                try {
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(1046.50, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(2093, ctx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                    osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.1);
+                } catch(e){}
+            }
+        };
+
         window.handleHostRoomSubmit = async function(e) {
             if (e) e.preventDefault();
             const nameInput = document.getElementById('hostRoomNameInput');
@@ -992,7 +1024,7 @@
             } finally {
                 submitBtn.disabled = false;
                 const t = window.translations[window.currentLang] || window.translations['ca'];
-                submitBtn.innerHTML = `<i class="fa-solid fa-shield-check text-sm"></i> <span>${t.verify_register}</span>`;
+                submitBtn.innerHTML = `<i class="fa-solid fa-shield-check text-sm"></i> <span>${t.verify_register || 'VERIFICAR Y REGISTRAR SALA'}</span>`;
             }
         };
 
@@ -1056,7 +1088,7 @@
                         btn.classList.remove('bg-emerald-600');
                         btn.classList.add('from-indigo-600', 'via-purple-600', 'to-pink-600');
                         const t = window.translations[window.currentLang] || window.translations['ca'];
-                        btn.innerHTML = `<i class="fa-solid fa-location-dot"></i> ${t.activate_transmit}`;
+                        btn.innerHTML = `<i class="fa-solid fa-location-dot"></i> ${t.activate_transmit || '¡Activar y Transmitir GPS Ya!'}`;
                     }, 1000);
                 };
 
@@ -1079,7 +1111,7 @@
             } else {
                 btn.disabled = false;
                 const t = window.translations[window.currentLang] || window.translations['ca'];
-                btn.innerHTML = `<i class="fa-solid fa-location-dot"></i> ${t.activate_transmit}`;
+                btn.innerHTML = `<i class="fa-solid fa-location-dot"></i> ${t.activate_transmit || '¡Activar y Transmitir GPS Ya!'}`;
                 alertModal("El navegador de este teléfono no soporta geolocalización GPS.");
             }
         };
@@ -1098,7 +1130,7 @@
                     const permission = await DeviceOrientationEvent.requestPermission();
                     if (permission === 'granted') initOrientationSensor();
                 } catch (e) {}
-            }
+            } else { initOrientationSensor(); }
 
             if (isCompassMapOriented) {
                 if (btnIcon) btnIcon.className = "fa-solid fa-compass text-emerald-400 text-xs sm:text-sm animate-spin-slow";
@@ -1175,7 +1207,7 @@
 
         function updateMapOrientation(heading) {
             deviceHeading = heading;
-            const headingText = document.getElementById('headingText'); if (headingText) headingText.innerText = `Rumb: ${Math.round(heading)}°`;
+            const headingText = document.getElementById('headingText'); if (headingText) headingText.innerText = `Rumbo: ${Math.round(heading)}°`;
             if (isCompassMapOriented) { const mapEl = document.getElementById('map'); if (mapEl) mapEl.style.transform = `rotate(${-heading}deg)`; }
         }
 
@@ -1207,7 +1239,7 @@
             try {
                 mqttClient = mqtt.connect(brokerUrl, { clientId: 'cs_' + myDeviceId + '_' + Math.random().toString(36).substring(2, 6), keepalive: 20, clean: true, connectTimeout: 5000 });
                 mqttClient.on('connect', () => {
-                    updateCloudBadge(true, "Conectat");
+                    updateCloudBadge(true, "Conectado");
                     if (activeGroupId) { mqttClient.subscribe(`concertsafeguard/v2/room_${activeGroupId}`, { qos: 0 }); broadcastPing(); }
                     if (myRegisteredName && currentPosCache) broadcastLocationViaMqtt(currentPosCache.lat, currentPosCache.lng);
                 });
@@ -1225,15 +1257,24 @@
 
                         if (payload.type === 'kick') {
                             if (payload.targetId) {
-                                removedMemberIds.add(payload.targetId); groupMembersMap.delete(payload.targetId);
-                                if (memberMarkers[payload.targetId]) { map.removeLayer(memberMarkers[payload.targetId]); delete memberMarkers[payload.targetId]; }
+                                if (isRoomClaimedByMe && payload.targetId === myDeviceId) return; // Líder is immune
+                                removedMemberIds.add(payload.targetId);
+                                groupMembersMap.delete(payload.targetId);
+                                if (memberMarkers[payload.targetId]) {
+                                    if(map) map.removeLayer(memberMarkers[payload.targetId]);
+                                    delete memberMarkers[payload.targetId];
+                                }
                                 syncRosterAndMap();
                                 if (payload.targetId === myDeviceId) {
-                                    isJoinedAsMember = false; myRegisteredName = 'Líder GPS'; localStorage.removeItem('concert_my_name');
                                     updateHostUI(); document.getElementById('mobileActiveBanner').classList.add('hidden');
                                     showToastNotification("Has sido desvinculado del grupo por el administrador.");
                                 }
                             }
+                            return;
+                        }
+
+                        if (payload.type === 'chat') {
+                            window.displayChatAlert(payload.name, payload.text, payload.msgId);
                             return;
                         }
 
@@ -1255,8 +1296,7 @@
 
                         if (payload.id && payload.lat && payload.lng) {
                             if (removedMemberIds.has(payload.id)) return;
-                            if (payload.id === myDeviceId && !isRoomClaimedByMe) return; // Prevent self ghosting on map
-
+                            
                             const existing = groupMembersMap.get(payload.id);
                             if (!existing && payload.id !== myDeviceId) showToastNotification(`📱 ¡Dispositivo conectado: ${payload.name || 'Integrante'}!`);
 
@@ -1388,7 +1428,6 @@
                         snapshot.forEach((docSnap) => {
                             const data = docSnap.data();
                             if (removedMemberIds.has(docSnap.id)) return;
-                            if (docSnap.id === myDeviceId && !isRoomClaimedByMe) return; // Prevent self ghosting on map
 
                             if (data && data.lat && data.lng) {
                                 groupMembersMap.set(docSnap.id, {
@@ -1405,7 +1444,7 @@
         }
 
         function syncRosterAndMap() {
-            // Filter self out of the map marker logic and list if not a leader
+            // El Líder siempre ve a todos (incluido a sí mismo en la lista). Los miembros ven a todos excepto a sí mismos.
             groupMembers = Array.from(groupMembersMap.values()).filter(m => isRoomClaimedByMe || m.id !== myDeviceId);
             
             renderRoster();
@@ -1466,15 +1505,15 @@
                         <div class="absolute inset-0 flex items-center justify-center p-6 text-center">
                             <div class="bg-slate-950/80 backdrop-blur border border-slate-800 p-5 rounded-2xl max-w-xs shadow-2xl">
                                 <i class="fa-solid fa-mobile-screen text-indigo-400 text-3xl mb-2"></i>
-                                <p class="text-xs text-slate-200 font-bold mb-1">No hi ha dispositius vinculats</p>
-                                <p class="text-[11px] text-slate-400">${t.scan_qr_msg}</p>
+                                <p class="text-xs text-slate-200 font-bold mb-1">No hay dispositivos vinculados</p>
+                                <p class="text-[11px] text-slate-400">${t.scan_qr_msg || 'Abre la cámara del otro teléfono y escanea el QR para vincularlo.'}</p>
                             </div>
                         </div>
                     `;
                 } else {
                     const FOV = 60;
                     groupMembers.forEach(m => {
-                        if (m.id === myDeviceId) return; // Prevent self HUD
+                        if (m.id === myDeviceId) return; // Prevent self HUD even for leader
 
                         const dist = Math.round(calculateDistance(parentPosition.lat, parentPosition.lng, m.lat, m.lng));
                         const bearing = calculateBearing(parentPosition.lat, parentPosition.lng, m.lat, m.lng);
@@ -1583,6 +1622,7 @@
         function checkGeofenceAlerts() {
             let breachedMembers = [];
             groupMembers.forEach(m => {
+                if (m.id === myDeviceId) return; // Líder no dispara alerta contra sí mismo
                 const dist = calculateDistance(parentPosition.lat, parentPosition.lng, m.lat, m.lng);
                 if (dist > safeRadiusMeters) breachedMembers.push({ member: m, dist: Math.round(dist) });
             });
@@ -1592,13 +1632,13 @@
             const statusCircle = document.getElementById('statusCircle');
             const t = window.translations[window.currentLang] || window.translations['ca'];
 
-            if (insideCountBadge) insideCountBadge.innerHTML = `${groupMembers.length} <span data-i18n="devices_connected">${t.devices_connected}</span>`;
+            if (insideCountBadge) insideCountBadge.innerHTML = `${groupMembers.length} <span data-i18n="devices_connected">${t.devices_connected || 'Dispositivos Conectados'}</span>`;
 
             if (breachedMembers.length > 0) {
                 alertBanner.classList.remove('hidden');
                 statusCircle.className = "w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping";
                 const namesStr = breachedMembers.map(b => `${b.member.name} (${b.dist}m)`).join(', ');
-                document.getElementById('alertBannerDetail').innerText = `Fora de rang: ${namesStr}. Límit: ${safeRadiusMeters}m.`;
+                document.getElementById('alertBannerDetail').innerText = `Fuera de rango: ${namesStr}. Límite: ${safeRadiusMeters}m.`;
                 if (radiusCircle) radiusCircle.setStyle({ color: '#ef4444', fillColor: '#f87171' });
                 playPerimeterSound();
             } else {
@@ -1610,7 +1650,7 @@
         }
 
         function createOrUpdateMemberMarker(member) {
-            if (member.id === myDeviceId && !isRoomClaimedByMe) return; // Self filtering on map
+            if (member.id === myDeviceId) return; // Prevent duplicate marker for self on map
 
             const isSos = !!member.sos;
             const dist = calculateDistance(parentPosition.lat, parentPosition.lng, member.lat, member.lng);
@@ -1626,7 +1666,7 @@
 
             const customIcon = L.divIcon({ className: 'custom-member-icon', html: iconHtml, iconSize: [size, size], iconAnchor: [anchor, anchor] });
             const elapsedSecs = Math.max(0, Math.floor((Date.now() - member.updated) / 1000));
-            const timeAgoStr = elapsedSecs < 10 ? 'Ara' : `${elapsedSecs}s`;
+            const timeAgoStr = elapsedSecs < 10 ? 'Ahora' : `Hace ${elapsedSecs}s`;
 
             if (memberMarkers[member.id]) {
                 memberMarkers[member.id].setLatLng([member.lat, member.lng]); memberMarkers[member.id].setIcon(customIcon);
@@ -1651,9 +1691,9 @@
                 container.innerHTML = `
                     <div class="p-6 text-center border border-dashed border-slate-800 rounded-2xl bg-slate-900/50">
                         <div class="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-500 mx-auto mb-3"><i class="fa-solid fa-mobile-screen-button text-2xl"></i></div>
-                        <p class="text-xs text-slate-300 font-bold mb-1">${t.waiting_signal} ${activeGroupId || '...'}</p>
-                        <p class="text-[11px] text-slate-500 mb-4 leading-relaxed">${t.scan_qr_msg}</p>
-                        <button onclick="window.openScanToLocateModal()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-bold transition shadow-lg shadow-indigo-600/30"><i class="fa-solid fa-qrcode mr-1"></i> ${t.view_qr}</button>
+                        <p class="text-xs text-slate-300 font-bold mb-1">${t.waiting_signal || 'Esperando señal'} ${activeGroupId || '...'}</p>
+                        <p class="text-[11px] text-slate-500 mb-4 leading-relaxed">${t.scan_qr_msg || 'Abre la cámara del otro teléfono y escanea el QR para vincularlo.'}</p>
+                        <button onclick="window.openScanToLocateModal()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-bold transition shadow-lg shadow-indigo-600/30"><i class="fa-solid fa-qrcode mr-1"></i> ${t.view_qr || 'Ver Código QR'}</button>
                     </div>`;
                 return;
             }
@@ -1677,22 +1717,22 @@
                                 <h3 class="font-bold text-sm text-slate-100 flex items-center gap-1.5">${m.name}${m.sos ? '<span class="text-[10px] bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded font-black">SOS</span>' : ''}</h3>
                                 <div class="flex items-center gap-3 text-xs text-slate-400 mt-0.5">
                                     <span><i class="fa-solid fa-battery-${m.battery > 70 ? 'full text-emerald-400' : m.battery > 30 ? 'half text-amber-400' : 'empty text-rose-400'} mr-1"></i>${m.battery}%</span>
-                                    <span><i class="fa-solid fa-satellite text-indigo-400 mr-1"></i>${t.live}</span>
+                                    <span><i class="fa-solid fa-satellite text-indigo-400 mr-1"></i>${t.live || 'En Vivo'}</span>
                                 </div>
                             </div>
                         </div>
                         <div class="text-right flex items-center gap-2">
                             <div>
-                                <div class="text-sm font-black ${isOutside ? 'text-rose-400 animate-pulse' : 'text-emerald-400'}">${dist} m</div>
+                                <div class="text-sm font-black ${isOutside ? 'text-rose-400 animate-pulse' : 'text-emerald-400'}">${m.id === myDeviceId && isRoomClaimedByMe ? '-' : dist + ' m'}</div>
                             </div>
-                            ${isRoomClaimedByMe ? `<button onclick="window.removeMember('${m.id}', '${m.name.replace(/'/g, "\\'")}')" class="ml-1 p-2 rounded-xl bg-slate-800 hover:bg-rose-600/30 text-slate-400 hover:text-rose-400 border border-slate-700"><i class="fa-solid fa-trash-can text-xs"></i></button>` : ''}
+                            ${isRoomClaimedByMe && m.id !== myDeviceId ? `<button onclick="window.removeMember('${m.id}', '${m.name.replace(/'/g, "\\'")}')" class="ml-1 p-2 rounded-xl bg-slate-800 hover:bg-rose-600/30 text-slate-400 hover:text-rose-400 border border-slate-700"><i class="fa-solid fa-trash-can text-xs"></i></button>` : ''}
                         </div>
                     </div>
                     <div class="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-                        <span class="text-[11px]"><i class="fa-solid fa-clock text-emerald-400 mr-1"></i>${elapsedSecs < 10 ? 'Ara' : `${elapsedSecs}s`}</span>
+                        <span class="text-[11px]"><i class="fa-solid fa-clock text-emerald-400 mr-1"></i>${elapsedSecs < 10 ? 'Ahora' : `${elapsedSecs}s`}</span>
                         <div class="flex items-center gap-1.5">
-                            <button onclick="window.centerOnMember('${m.id}')" class="px-2.5 py-1 rounded-lg bg-indigo-950 border border-indigo-800/50 text-indigo-300 text-[11px] font-semibold"><i class="fa-solid fa-location-dot mr-1"></i>Mapa</button>
-                            <button onclick="window.openARView()" class="px-2.5 py-1 rounded-lg bg-emerald-950 border border-emerald-800/50 text-emerald-300 text-[11px] font-semibold"><i class="fa-solid fa-camera mr-1"></i>RA</button>
+                            ${m.id !== myDeviceId ? `<button onclick="window.centerOnMember('${m.id}')" class="px-2.5 py-1 rounded-lg bg-indigo-950 border border-indigo-800/50 text-indigo-300 text-[11px] font-semibold"><i class="fa-solid fa-location-dot mr-1"></i>Mapa</button>
+                            <button onclick="window.openARView()" class="px-2.5 py-1 rounded-lg bg-emerald-950 border border-emerald-800/50 text-emerald-300 text-[11px] font-semibold"><i class="fa-solid fa-camera mr-1"></i>RA</button>` : `<span class="px-2.5 py-1 text-slate-500 font-semibold italic text-[11px]">Tú (Líder)</span>`}
                         </div>
                     </div>`;
                 container.appendChild(card);
@@ -1712,12 +1752,12 @@
             gpsSyncCounter++;
             const syncCountLabel = document.getElementById('mobileSyncCount'), lastSyncLabel = document.getElementById('mobileLastSyncTime'), dot = document.getElementById('syncPulseDot');
             if (dot) dot.className = "fa-solid fa-signal text-emerald-400 mr-1 animate-pulse";
-            if (syncCountLabel) syncCountLabel.innerText = `${gpsSyncCounter} enviaments OK`;
-            if (lastSyncLabel) lastSyncLabel.innerText = `Enviant a ${activeGroupId} (${new Date().toLocaleTimeString()})`;
+            if (syncCountLabel) syncCountLabel.innerText = `${gpsSyncCounter} envíos OK`;
+            if (lastSyncLabel) lastSyncLabel.innerText = `Transmitiendo a ${activeGroupId} (${new Date().toLocaleTimeString()})`;
         }
         function alertModal(msg) {
             const modal = document.createElement('div'); modal.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4";
-            modal.innerHTML = `<div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl max-w-sm w-full text-center shadow-2xl"><div class="text-indigo-400 text-3xl mb-3"><i class="fa-solid fa-circle-info"></i></div><p class="text-sm text-slate-200 mb-5 font-medium leading-relaxed">${msg}</p><button onclick="this.closest('.fixed').remove()" class="w-full py-2.5 bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-lg">Entendido</button></div>`;
+            modal.innerHTML = `<div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl max-w-sm w-full text-center shadow-2xl"><div class="text-indigo-400 text-3xl mb-3"><i class="fa-solid fa-circle-info"></i></div><p class="text-sm text-slate-200 mb-5 font-medium leading-relaxed">${msg}</p><button onclick="this.closest('.fixed').remove()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-indigo-600/30">Entendido</button></div>`;
             document.body.appendChild(modal);
         }
         function showToastNotification(message) {
