@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es" class="dark h-full bg-slate-950">
+<html lang="ca" class="dark h-full bg-slate-950">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ConcertSafe Guard - Localizador Real en Vivo y Cámara RA</title>
+    <title>ConcertSafe Guard - Localitzador i Càmera RA</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -134,43 +134,63 @@
         <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-3">
                 <div class="w-11 h-11 rounded-2xl overflow-hidden border border-amber-500/30 flex items-center justify-center bg-slate-950 shadow-lg shadow-amber-500/10 flex-shrink-0" title="ConcertSafe Guard">
-                    <img src="logo_donut.png" alt="ConcertSafe Guard Donut Logo" class="w-full h-full object-cover rounded-xl" onerror="this.onerror=null; this.src='https://placehold.co/100x100/1e1b4b/e0e7ff?text=Donut';">
+                    <img src="logo_donut.png" alt="ConcertSafe Guard Donut Logo" class="w-full h-full object-cover rounded-xl" onerror="this.onerror=null; this.src='https://placehold.co/100x100/1e1b4b/e0e7ff?text=CS';">
                 </div>
                 <div>
                     <h1 class="font-bold text-lg leading-tight tracking-wide text-white flex items-center gap-2">
                         ConcertSafe Guard
-                        <button onclick="window.sendSosSignal()" class="text-[11px] font-black px-3 py-1 rounded-full bg-orange-500 hover:bg-orange-600 text-white border border-orange-400 flex items-center gap-1.5 shadow-lg shadow-orange-500/40 transition transform active:scale-95" title="Enviar Alerta SOS Inmediata">
-                            <i class="fa-solid fa-hand animate-pulse"></i> SOS
+                        <!-- Nuevo Botón SOS Naranja en la cabecera -->
+                        <button onclick="window.sendSosSignal()" class="bg-orange-500 hover:bg-orange-400 text-slate-950 font-black px-3 py-1 rounded-xl text-xs flex items-center gap-1 shadow-lg shadow-orange-500/30 transition active:scale-95 border border-orange-300 ml-1">
+                            <i class="fa-solid fa-hand"></i> SOS
                         </button>
                     </h1>
-                    <p class="text-xs text-slate-400">Sala: <strong id="currentGroupIdDisplay" class="text-indigo-400 font-mono">Sin Configurar</strong></p>
+                    <p class="text-xs text-slate-400"><span data-i18n="room_label">Sala:</span> <strong id="currentGroupIdDisplay" class="text-indigo-400 font-mono" data-i18n="unconfigured">Sense Configurar</strong></p>
                 </div>
             </div>
 
             <div class="flex items-center gap-2 flex-wrap">
                 <button onclick="window.editHostName()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition active:scale-95" title="Editar tu nombre visible">
                     <i class="fa-solid fa-user-pen text-indigo-400"></i>
-                    <span>Mi Nombre: <strong id="hostNameDisplay" class="text-indigo-300 font-semibold">Líder GPS</strong></span>
+                    <span><span data-i18n="my_name">El meu nom:</span> <strong id="hostNameDisplay" class="text-indigo-300 font-semibold">Líder GPS</strong></span>
                 </button>
 
-                <button onclick="window.openARView()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition transform active:scale-95" title="Activar Cámara RA">
+                <button onclick="window.openARView()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition transform active:scale-95">
                     <i class="fa-solid fa-camera text-sm animate-pulse"></i>
-                    <span>Cámara RA</span>
+                    <span data-i18n="cam_ra">Càmera RA</span>
                 </button>
+
+                <!-- Selector de Idiomas -->
+                <div class="relative">
+                    <button id="langToggleBtn" onclick="window.toggleLangMenu()" class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition active:scale-95" title="Canviar Idioma">
+                        <span id="currentLangIcon" class="text-base leading-none flex items-center">
+                            <!-- Senyera SVG Default -->
+                            <svg class="w-5 h-3.5 rounded-sm" viewBox="0 0 16 12" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="12" fill="#FFC400"/><rect y="1.33" width="16" height="1.33" fill="#DA121A"/><rect y="4" width="16" height="1.33" fill="#DA121A"/><rect y="6.66" width="16" height="1.33" fill="#DA121A"/><rect y="9.33" width="16" height="1.33" fill="#DA121A"/></svg>
+                        </span>
+                        <i class="fa-solid fa-chevron-down text-[9px] text-slate-400"></i>
+                    </button>
+                    <div id="langDropdown" class="hidden absolute right-0 mt-2 w-36 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden divide-y divide-slate-700/50">
+                        <button onclick="window.setLanguage('ca')" class="w-full text-left px-4 py-2.5 hover:bg-slate-700 flex items-center gap-2 text-xs font-medium text-slate-200"><svg class="w-4 h-3 rounded-sm border border-slate-600" viewBox="0 0 16 12" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="12" fill="#FFC400"/><rect y="1.33" width="16" height="1.33" fill="#DA121A"/><rect y="4" width="16" height="1.33" fill="#DA121A"/><rect y="6.66" width="16" height="1.33" fill="#DA121A"/><rect y="9.33" width="16" height="1.33" fill="#DA121A"/></svg> Català</button>
+                        <button onclick="window.setLanguage('es')" class="w-full text-left px-4 py-2.5 hover:bg-slate-700 flex items-center gap-2 text-xs font-medium text-slate-200"><span class="text-sm leading-none">🇪🇸</span> Castellano</button>
+                        <button onclick="window.setLanguage('en')" class="w-full text-left px-4 py-2.5 hover:bg-slate-700 flex items-center gap-2 text-xs font-medium text-slate-200"><span class="text-sm leading-none">🇬🇧</span> English</button>
+                        <button onclick="window.setLanguage('fr')" class="w-full text-left px-4 py-2.5 hover:bg-slate-700 flex items-center gap-2 text-xs font-medium text-slate-200"><span class="text-sm leading-none">🇫🇷</span> Français</button>
+                        <button onclick="window.setLanguage('de')" class="w-full text-left px-4 py-2.5 hover:bg-slate-700 flex items-center gap-2 text-xs font-medium text-slate-200"><span class="text-sm leading-none">🇩🇪</span> Deutsch</button>
+                        <button onclick="window.setLanguage('zh')" class="w-full text-left px-4 py-2.5 hover:bg-slate-700 flex items-center gap-2 text-xs font-medium text-slate-200"><span class="text-sm leading-none">🇨🇳</span> 中文</button>
+                    </div>
+                </div>
 
                 <button onclick="window.openHostRoomModal()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition active:scale-95" title="Configurar sala privada">
                     <i class="fa-solid fa-lock text-indigo-400"></i>
-                    <span>Sala Privada</span>
+                    <span data-i18n="private_room">Sala Privada</span>
                 </button>
 
                 <button id="alarmToggleBtn" onclick="window.toggleAudioAlarm()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium flex items-center gap-2 transition active:scale-95" title="Activar/Desactivar Alarma">
                     <i id="alarmIcon" class="fa-solid fa-bell text-amber-400"></i>
-                    <span id="alarmBtnText" class="hidden sm:inline">Alarma</span>
+                    <span id="alarmBtnText" class="hidden sm:inline" data-i18n="alarm">Alarma</span>
                 </button>
 
                 <button onclick="window.openScanToLocateModal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition transform active:scale-95">
                     <i class="fa-solid fa-qrcode text-sm"></i>
-                    <span>Vincular Móvil</span>
+                    <span data-i18n="link_device">Vincular</span>
                 </button>
             </div>
         </div>
@@ -180,10 +200,10 @@
         <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
             <div class="flex items-center gap-2 text-xs font-bold">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-                <span>📡 TRANSMITIENDO GPS AL GRUPO (<span id="mobileBannerName" class="text-indigo-300">...</span>)</span>
+                <span>📡 <span data-i18n="transmitting">TRANSMETENT GPS AL GRUP</span> (<span id="mobileBannerName" class="text-indigo-300">...</span>)</span>
             </div>
-            <button onclick="window.openJoinModalAgain()" class="text-[11px] bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-lg font-bold transition">
-                Editar Nombre
+            <button onclick="window.openJoinModalAgain()" class="text-[11px] bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-lg font-bold transition" data-i18n="edit_name">
+                Editar Nom
             </button>
         </div>
     </div>
@@ -195,13 +215,13 @@
                     <i class="fa-solid fa-triangle-exclamation"></i>
                 </div>
                 <div>
-                    <p class="font-extrabold text-sm sm:text-base tracking-wide" id="alertBannerTitle">¡ALERTA DE PERÍMETRO SEGURA!</p>
-                    <p class="text-xs sm:text-sm text-rose-100" id="alertBannerDetail">Un integrante del grupo ha sobrepasado el radio seguro configurado.</p>
+                    <p class="font-extrabold text-sm sm:text-base tracking-wide" id="alertBannerTitle" data-i18n="perimeter_alert">¡ALERTA DE PERÍMETRE SEGUR!</p>
+                    <p class="text-xs sm:text-sm text-rose-100" id="alertBannerDetail">Un integrant del grup ha sobrepassat el radi configurat.</p>
                 </div>
             </div>
             <div class="flex items-center gap-2 flex-wrap">
                 <button onclick="window.silenceAlarm()" class="px-3 py-1.5 rounded-xl bg-white text-rose-700 text-xs font-extrabold hover:bg-rose-50 transition shadow-md active:scale-95">
-                    <i class="fa-solid fa-volume-xmark mr-1"></i> Silenciar Alarma
+                    <i class="fa-solid fa-volume-xmark mr-1"></i> <span data-i18n="silence_alarm">Silenciar Alarma</span>
                 </button>
             </div>
         </div>
@@ -215,16 +235,16 @@
                 </div>
                 <div>
                     <p class="font-black text-sm sm:text-base tracking-wide uppercase text-slate-950 flex items-center gap-2" id="sosBannerTitle">
-                        ¡ALERTA SOS DE AUXILIO!
+                        ¡ALERTA SOS D'AUXILI!
                     </p>
                     <p class="text-xs sm:text-sm text-slate-950 font-bold" id="sosBannerDetail">
-                        Un dispositivo ha solicitado ayuda mediante el botón SOS.
+                        Un dispositiu ha sol·licitat ajuda mitjançant el botó SOS.
                     </p>
                 </div>
             </div>
             <div class="flex items-center gap-2">
                 <button onclick="window.dismissSosAlert()" class="px-3.5 py-2 rounded-xl bg-slate-950 hover:bg-slate-900 text-amber-300 text-xs font-black transition shadow-xl border border-amber-400/50 flex items-center gap-1.5 active:scale-95">
-                    <i class="fa-solid fa-bell-slash"></i> Desactivar Alerta SOS
+                    <i class="fa-solid fa-bell-slash"></i> <span data-i18n="disable_sos">Desactivar Alerta SOS</span>
                 </button>
             </div>
         </div>
@@ -240,9 +260,9 @@
                     <div>
                         <div class="flex justify-between items-center mb-1">
                             <label class="text-xs font-medium text-slate-400">
-                                <i class="fa-solid fa-draw-polygon text-indigo-400 mr-1"></i>Radio Seguro (Perímetro)
+                                <i class="fa-solid fa-draw-polygon text-indigo-400 mr-1"></i><span data-i18n="safe_radius">Radi Segur (Perímetre)</span>
                             </label>
-                            <span id="radiusDisplay" class="text-xs font-extrabold text-indigo-400 bg-indigo-950 px-2 py-0.5 rounded-md border border-indigo-800/50">50 metros</span>
+                            <span id="radiusDisplay" class="text-xs font-extrabold text-indigo-400 bg-indigo-950 px-2 py-0.5 rounded-md border border-indigo-800/50">50 <span data-i18n="meters">metres</span></span>
                         </div>
                         <input type="range" id="radiusRange" min="10" max="500" step="5" value="50" oninput="window.updateGeofenceRadius(this.value)" class="w-full accent-indigo-500 bg-slate-950 h-2 rounded-lg cursor-pointer">
                     </div>
@@ -250,7 +270,7 @@
                     <div class="flex items-center gap-2">
                         <button onclick="window.centerOnParent()" class="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-indigo-500/50 text-slate-200 text-xs rounded-xl font-bold flex items-center justify-center gap-2 transition active:scale-95 shadow-md">
                             <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-                            <i class="fa-solid fa-crosshairs text-indigo-400 text-sm"></i> Centrar mi Ubicación GPS
+                            <i class="fa-solid fa-crosshairs text-indigo-400 text-sm"></i> <span data-i18n="center_gps">Centrar la meva Ubicació</span>
                         </button>
                     </div>
                 </div>
@@ -263,7 +283,7 @@
                 </div>
 
                 <div class="absolute top-3 right-3 z-10 flex items-center gap-2 pointer-events-auto">
-                    <button id="compassMapBtn" onclick="window.toggleCompassOrientation()" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-950/90 backdrop-blur border border-slate-700/80 text-emerald-400 hover:border-emerald-500/80 flex items-center justify-center shadow-xl transition transform active:scale-95" title="Activar/Desactivar Orientación con Brújula">
+                    <button id="compassMapBtn" onclick="window.toggleCompassOrientation()" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-950/90 backdrop-blur border border-slate-700/80 text-emerald-400 hover:border-emerald-500/80 flex items-center justify-center shadow-xl transition transform active:scale-95" title="Activar Brújula">
                         <i id="compassIcon" class="fa-solid fa-compass text-emerald-400 text-xs sm:text-sm animate-spin-slow"></i>
                     </button>
                     <button id="fullscreenMapBtn" onclick="window.toggleMapFullscreen()" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-950/90 backdrop-blur border border-slate-700/80 text-slate-200 hover:text-white hover:border-indigo-500/80 flex items-center justify-center shadow-xl transition transform active:scale-95" title="Pantalla Completa">
@@ -272,53 +292,53 @@
                 </div>
 
                 <div class="absolute top-4 left-4 z-10 flex flex-wrap gap-2 pointer-events-none pr-24">
-                    <span onclick="window.editHostName()" class="bg-slate-950/90 backdrop-blur border border-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-2 font-medium pointer-events-auto cursor-pointer hover:border-indigo-500 transition" title="Pulsa para cambiar tu nombre">
+                    <span onclick="window.editHostName()" class="bg-slate-950/90 backdrop-blur border border-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-2 font-medium pointer-events-auto cursor-pointer hover:border-indigo-500 transition">
                         <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping"></span>
                         <i class="fa-solid fa-user-shield text-indigo-400"></i> <span id="mapHostNameBadge">Líder GPS</span>
                     </span>
                     <span id="headingBadge" class="bg-slate-950/90 backdrop-blur border border-slate-700 text-indigo-300 text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 font-mono">
-                        <i class="fa-solid fa-compass text-xs text-indigo-400"></i> <span id="headingText">Rumbo: 0°</span>
+                        <i class="fa-solid fa-compass text-xs text-indigo-400"></i> <span id="headingText">Rumb: 0°</span>
                     </span>
                     <span class="bg-slate-950/90 backdrop-blur border border-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-2 font-medium">
                         <span id="statusCircle" class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-                        <span id="insideCountBadge">0 Móviles Conectados</span>
+                        <span id="insideCountBadge">0 <span data-i18n="devices_connected">Dispositius Connectats</span></span>
                     </span>
                     <span id="gpsAccuracyBadge" class="bg-slate-950/90 backdrop-blur border border-slate-700 text-amber-300 text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 font-mono">
-                        <i class="fa-solid fa-bullseye text-xs"></i> Precisión: <span id="gpsAccuracyText">Obteniendo...</span>
+                        <i class="fa-solid fa-bullseye text-xs"></i> <span data-i18n="accuracy">Precisió:</span> <span id="gpsAccuracyText">...</span>
                     </span>
                 </div>
 
                 <div class="absolute bottom-6 right-6 z-10 pointer-events-auto">
                     <button onclick="window.openARView()" class="px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-600 to-indigo-600 hover:from-emerald-400 hover:to-indigo-500 text-white font-extrabold text-xs shadow-2xl shadow-emerald-500/50 flex items-center gap-2 transition transform active:scale-90 border border-emerald-400/40">
                         <i class="fa-solid fa-camera text-base"></i>
-                        <span>Abrir Cámara RA</span>
+                        <span data-i18n="open_ar">Obrir Càmera RA</span>
                     </button>
                 </div>
             </div>
 
         </section>
 
-        <!-- RIGHT COLUMN: CONNECTED DEVICES & SOS -->
+        <!-- RIGHT COLUMN: CONNECTED DEVICES -->
         <section class="lg:col-span-4 flex flex-col gap-4">
 
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
                 <div class="flex items-center justify-between mb-2">
                     <h2 class="font-bold text-slate-100 text-base flex items-center gap-2">
                         <i class="fa-solid fa-users text-indigo-400"></i>
-                        Móviles Conectados (<span id="membersCountText">0</span>)
+                        <span data-i18n="devices_connected">Dispositius Connectats</span> (<span id="membersCountText">0</span>)
                     </h2>
                     <div class="flex items-center gap-2">
-                        <button onclick="window.openSafetyTipsModal()" class="text-[11px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/40 font-semibold hover:bg-indigo-500/30 transition">
-                            Consejos
+                        <button onclick="window.openSafetyTipsModal()" class="text-[11px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/40 font-semibold hover:bg-indigo-500/30 transition" data-i18n="tips">
+                            Consells
                         </button>
                         <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-lg border border-emerald-500/20 font-semibold" id="syncStatus">
-                            <i class="fa-solid fa-satellite-dish text-emerald-400 mr-1 text-[10px] animate-pulse"></i>En Vivo
+                            <i class="fa-solid fa-satellite-dish text-emerald-400 mr-1 text-[10px] animate-pulse"></i><span data-i18n="live">En Viu</span>
                         </span>
                     </div>
                 </div>
                 
                 <p class="text-xs text-slate-400 leading-relaxed">
-                    Código de Sala: <strong class="text-indigo-300 font-mono text-sm font-black" id="groupCodeBadgeInline">...</strong>
+                    <span data-i18n="room_code">Codi de Sala:</span> <strong class="text-indigo-300 font-mono text-sm font-black" id="groupCodeBadgeInline">...</strong>
                 </p>
             </div>
 
@@ -339,7 +359,7 @@
             <div class="absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-auto">
                 <div class="bg-slate-950/80 backdrop-blur border border-slate-700/80 px-3 py-1.5 rounded-2xl flex items-center gap-2">
                     <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-                    <span id="arHeadingText" class="text-xs font-mono font-bold text-slate-200">Cámara RA Activa</span>
+                    <span id="arHeadingText" class="text-xs font-mono font-bold text-slate-200" data-i18n="cam_ra_active">Càmera RA Activa</span>
                 </div>
                 <button onclick="window.closeARView()" class="w-10 h-10 rounded-full bg-slate-950/80 backdrop-blur border border-slate-700 text-slate-200 hover:text-white flex items-center justify-center shadow-xl transition active:scale-90">
                     <i class="fa-solid fa-xmark text-lg"></i>
@@ -371,25 +391,25 @@
             <div class="w-12 h-12 bg-indigo-500/20 text-indigo-400 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3 border border-indigo-500/30">
                 <i class="fa-solid fa-shield-cat"></i>
             </div>
-            <h3 class="text-base font-extrabold text-white text-center mb-3">Protocolo Obligatorio Anti-Pérdida</h3>
+            <h3 class="text-base font-extrabold text-white text-center mb-3" data-i18n="tips_title">Protocol Obligatori Anti-Pèrdua</h3>
             
             <ul class="space-y-2.5 text-xs text-slate-300 mb-5">
                 <li class="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950 border border-slate-800">
                     <i class="fa-solid fa-check text-emerald-400 mt-0.5"></i>
-                    <span><strong>1. Pulsera con Teléfono:</strong> Escribe tu número móvil con rotulador indeleble en la pulsera del menor.</span>
+                    <span data-i18n="tip_1"><strong>1. Polsera amb Telèfon:</strong> Escriu el teu número mòbil amb retolador indeleble a la polsera del menor.</span>
                 </li>
                 <li class="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950 border border-slate-800">
                     <i class="fa-solid fa-check text-emerald-400 mt-0.5"></i>
-                    <span><strong>2. Punto de Encuentro Fijo:</strong> Acuerda un lugar visible al entrar (p. ej., bajo el cartel de Info).</span>
+                    <span data-i18n="tip_2"><strong>2. Punt de Trobada Fix:</strong> Acorda un lloc visible en entrar (p. ex., sota el cartell d'Info).</span>
                 </li>
                 <li class="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950 border border-slate-800">
                     <i class="fa-solid fa-check text-emerald-400 mt-0.5"></i>
-                    <span><strong>3. Foto Actualizada:</strong> Hazles una foto de cuerpo entero justo antes de entrar para saber exacta la ropa que llevan.</span>
+                    <span data-i18n="tip_3"><strong>3. Foto Actualitzada:</strong> Fes-los una foto de cos sencer just abans d'entrar per saber exacta la roba que porten.</span>
                 </li>
             </ul>
 
-            <button onclick="document.getElementById('safetyTipsModal').classList.add('hidden')" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg transition">
-                Entendido
+            <button onclick="document.getElementById('safetyTipsModal').classList.add('hidden')" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg transition" data-i18n="understood">
+                Entès
             </button>
         </div>
     </div>
@@ -405,28 +425,28 @@
                 <i class="fa-solid fa-location-crosshairs"></i>
             </div>
 
-            <h2 class="text-xl font-extrabold text-white mb-1 tracking-wide">Transmitir GPS al Grupo</h2>
+            <h2 class="text-xl font-extrabold text-white mb-1 tracking-wide" data-i18n="transmit_gps">Transmetre GPS al Grup</h2>
             <p class="text-xs text-slate-300 mb-4 leading-relaxed">
-                Código de sala: <strong id="modalGroupIdLabel" class="text-indigo-400 font-mono font-bold">...</strong>
+                <span data-i18n="room_code">Codi de sala:</span> <strong id="modalGroupIdLabel" class="text-indigo-400 font-mono font-bold">...</strong>
             </p>
 
             <form id="joinForm" onsubmit="window.handleDeviceRegistration(event)" class="space-y-4 text-left">
                 <div>
-                    <label class="block text-xs font-bold text-slate-300 mb-1.5">Nombre / Apodo del integrante:</label>
+                    <label class="block text-xs font-bold text-slate-300 mb-1.5" data-i18n="member_name_label">Nom / Motiu de l'integrant:</label>
                     <input type="text" id="joinNameInput" required placeholder="Ej: Lucas, Sofía, Marta..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 font-medium">
                 </div>
 
                 <div id="mobileLiveStatus" class="p-3 bg-slate-950 border border-indigo-500/40 rounded-xl text-xs space-y-1">
                     <div class="flex items-center justify-between text-indigo-300 font-bold">
-                        <span><i id="syncPulseDot" class="fa-solid fa-signal text-amber-400 mr-1"></i> Transmisión GPS</span>
-                        <span id="mobileSyncCount" class="text-[10px] bg-indigo-900/60 px-2 py-0.5 rounded text-indigo-200">0 envíos</span>
+                        <span><i id="syncPulseDot" class="fa-solid fa-signal text-amber-400 mr-1"></i> <span data-i18n="gps_transmission">Transmissió GPS</span></span>
+                        <span id="mobileSyncCount" class="text-[10px] bg-indigo-900/60 px-2 py-0.5 rounded text-indigo-200">0 enviaments</span>
                     </div>
-                    <p class="text-[11px] text-slate-400" id="mobileLastSyncTime">Escribe tu nombre para empezar a transmitir...</p>
+                    <p class="text-[11px] text-slate-400" id="mobileLastSyncTime">Escriu el teu nom per començar a transmetre...</p>
                 </div>
 
                 <button type="submit" id="grantPermissionBtn" class="w-full py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-extrabold text-sm rounded-xl shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 transition transform active:scale-95">
                     <i class="fa-solid fa-location-dot"></i>
-                    <span>¡Activar y Transmitir GPS Ya!</span>
+                    <span data-i18n="activate_transmit">¡Activar i Transmetre GPS Ja!</span>
                 </button>
             </form>
         </div>
@@ -443,37 +463,37 @@
                 <div class="w-12 h-12 bg-indigo-600/20 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-indigo-500/30">
                     <i class="fa-solid fa-qrcode text-2xl"></i>
                 </div>
-                <h3 class="text-lg font-extrabold text-white">Vincular Teléfono Integrante</h3>
-                <p class="text-xs text-slate-400 mt-1 leading-relaxed">
-                    Escanea el código QR con la cámara del móvil a rastrear.
+                <h3 class="text-lg font-extrabold text-white" data-i18n="link_phone">Vincular Telèfon Integrant</h3>
+                <p class="text-xs text-slate-400 mt-1 leading-relaxed" data-i18n="scan_qr_desc">
+                    Escaneja el codi QR amb la càmera del dispositiu a rastrejar.
                 </p>
             </div>
 
             <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 mb-4 flex flex-col items-center gap-2">
                 <div id="qrcode" class="bg-white p-2.5 rounded-2xl shadow-xl min-w-[150px] min-h-[150px] flex items-center justify-center"></div>
                 <p class="text-xs text-indigo-300 font-medium">
-                    <i class="fa-solid fa-camera mr-1"></i> Apunta con la cámara del otro teléfono
+                    <i class="fa-solid fa-camera mr-1"></i> <span data-i18n="point_camera">Apunta amb la càmera de l'altre telèfon</span>
                 </p>
             </div>
 
             <div class="space-y-3">
                 <div class="p-3 bg-slate-950 border border-indigo-500/30 rounded-xl flex items-center justify-between">
                     <div>
-                        <span class="text-[10px] text-slate-400 uppercase font-bold block">Código de Sala Corto:</span>
+                        <span class="text-[10px] text-slate-400 uppercase font-bold block" data-i18n="short_code">Codi de Sala Curt:</span>
                         <strong id="modalGroupCodeText" class="text-indigo-400 font-mono text-base font-extrabold tracking-wider">...</strong>
                     </div>
-                    <button onclick="window.promptManualGroupCode()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700">
-                        Cambiar Sala
+                    <button onclick="window.promptManualGroupCode()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700" data-i18n="change_room">
+                        Canviar Sala
                     </button>
                 </div>
 
                 <div>
-                    <label class="text-xs font-semibold text-slate-400 mb-1 block">O copia el enlace directo:</label>
+                    <label class="text-xs font-semibold text-slate-400 mb-1 block" data-i18n="copy_link">O copia l'enllaç directe:</label>
                     <div class="flex items-center gap-2">
                         <input id="groupCodeInput" readonly value="" class="bg-slate-950 border border-slate-800 text-indigo-400 font-mono text-xs text-center rounded-xl p-3 flex-1 select-all font-semibold">
                         <button onclick="window.copyGroupLink()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-3 rounded-xl transition flex items-center gap-1.5 active:scale-95 shadow-md">
                             <i class="fa-solid fa-copy"></i>
-                            <span>Copiar</span>
+                            <span data-i18n="copy">Copiar</span>
                         </button>
                     </div>
                 </div>
@@ -492,25 +512,25 @@
                 <i class="fa-solid fa-shield-halved"></i>
             </div>
 
-            <h2 class="text-xl font-black text-white mb-1 tracking-wide">Crear Sala Privada Única</h2>
-            <p class="text-xs text-slate-300 mb-5 leading-relaxed">
-                Introduce un nombre exclusivo para tu sala de monitoreo. Si la sala ya está activa con otro líder, solo se podrá ingresar escaneando su código QR.
+            <h2 class="text-xl font-black text-white mb-1 tracking-wide" data-i18n="create_room_title">Crear Sala Privada Única</h2>
+            <p class="text-xs text-slate-300 mb-5 leading-relaxed" data-i18n="create_room_desc">
+                Introdueix un nom exclusiu per a la teva sala de monitorització. Si la sala ja està activa amb un altre líder, només s'hi podrà ingressar escanejant el seu codi QR.
             </p>
 
             <form id="hostRoomForm" onsubmit="window.handleHostRoomSubmit(event)" class="space-y-4 text-left">
                 <div>
                     <label class="block text-xs font-bold text-slate-300 mb-1.5">
-                        <i class="fa-solid fa-key text-indigo-400 mr-1"></i>Nombre de la Sala:
+                        <i class="fa-solid fa-key text-indigo-400 mr-1"></i><span data-i18n="room_name_label">Nom de la Sala:</span>
                     </label>
-                    <input type="text" id="hostRoomNameInput" required placeholder="Ej: FamiliaPerez2026, ConciertoRosalia..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono font-bold uppercase tracking-wider">
-                    <p class="text-[11px] text-slate-400 mt-1">Sugerencia: Usa un nombre personalizado único con tu apellido o fecha.</p>
+                    <input type="text" id="hostRoomNameInput" required placeholder="Ej: FamiliaPerez2026..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono font-bold uppercase tracking-wider">
+                    <p class="text-[11px] text-slate-400 mt-1" data-i18n="room_hint">Suggeriment: Usa un nom personalitzat únic amb el teu cognom o data.</p>
                 </div>
 
                 <div id="roomClaimFeedback" class="hidden p-3 rounded-xl text-xs font-medium flex items-center gap-2 border"></div>
 
                 <button type="submit" id="claimRoomSubmitBtn" class="w-full py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 transition transform active:scale-95">
                     <i class="fa-solid fa-shield-check text-sm"></i>
-                    <span>VERIFICAR Y REGISTRAR SALA</span>
+                    <span data-i18n="verify_register">VERIFICAR I REGISTRAR SALA</span>
                 </button>
             </form>
         </div>
@@ -518,11 +538,11 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // APP STATE
         const urlParams = new URLSearchParams(window.location.search);
-        
         let activeGroupId = urlParams.get('groupId') ? urlParams.get('groupId').toUpperCase() : (localStorage.getItem('concert_group_id') || '');
         let isRoomClaimedByMe = false;
         let isJoinedAsMember = false;
@@ -532,32 +552,18 @@
         let appId = typeof __app_id !== 'undefined' ? __app_id : 'concert-safeguard-real';
         localStorage.setItem('concert_app_id', appId);
 
-        document.getElementById('currentGroupIdDisplay').innerText = activeGroupId || 'Sin Configurar';
-        document.getElementById('groupCodeBadgeInline').innerText = activeGroupId || 'Sin Configurar';
-        document.getElementById('modalGroupCodeText').innerText = activeGroupId || 'Sin Configurar';
-        document.getElementById('modalGroupIdLabel').innerText = activeGroupId || 'Sin Configurar';
+        let app = null, db = null, auth = null, currentUser = null, mqttClient = null;
 
-        let app = null;
-        let db = null;
-        let auth = null;
-        let currentUser = null;
-        let mqttClient = null;
-
-        let myDeviceId = localStorage.getItem('concert_device_id');
-        if (!myDeviceId) {
-            myDeviceId = 'dev_' + Math.random().toString(36).substring(2, 9);
-            localStorage.setItem('concert_device_id', myDeviceId);
-        }
-
+        let myDeviceId = localStorage.getItem('concert_device_id') || ('dev_' + Math.random().toString(36).substring(2, 9));
+        localStorage.setItem('concert_device_id', myDeviceId);
+        
         let myRegisteredName = localStorage.getItem('concert_my_name') || 'Líder GPS';
         let gpsSyncCounter = 0;
         let currentPosCache = null;
 
         let hostWatchId = null;
         let safeRadiusMeters = 50;
-        let map = null;
-        let parentMarker = null;
-        let radiusCircle = null;
+        let map = null, parentMarker = null, radiusCircle = null;
         let parentPosition = { lat: 41.3634, lng: 2.1526 };
         let groupMembersMap = new Map();
         let groupMembers = [];
@@ -566,28 +572,220 @@
         let firestoreUnsubscribe = null;
         
         let isAudioAlarmEnabled = true;
-        let alarmOscillator = null;
+        let perimeterOscillator = null;
         let sosOscillator = null;
+        let perimeterInterval = null;
         let sosInterval = null;
         let audioContext = null;
         let wakeLock = null;
 
-        let arVideoStream = null;
-        let arAnimationFrame = null;
-        let deviceHeading = 0;
-        let isCompassMapOriented = true;
+        let arVideoStream = null, arAnimationFrame = null;
+        let deviceHeading = 0, isCompassMapOriented = true;
 
-        const MQTT_BROKERS = [
-            'wss://broker.emqx.io:8084/mqtt',
-            'wss://broker.hivemq.com:8884/mqtt',
-            'wss://test.mosquitto.org:8081/mqtt'
-        ];
+        const MQTT_BROKERS = ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081/mqtt'];
         let currentBrokerIndex = 0;
 
-        // --- GLOBAL EXPOSED FUNCTIONS FOR HTML HANDLERS ---
+        // INTERNATIONALIZATION (i18n)
+        window.currentLang = localStorage.getItem('concert_lang') || 'ca';
+
+        window.translations = {
+            ca: {
+                room_label: "Sala:", unconfigured: "Sense Configurar", my_name: "El meu nom:", cam_ra: "Càmera RA",
+                private_room: "Sala Privada", alarm: "Alarma", link_device: "Vincular", transmitting: "TRANSMETENT GPS AL GRUP",
+                edit_name: "Editar Nom", perimeter_alert: "¡ALERTA DE PERÍMETRE SEGUR!", silence_alarm: "Silenciar Alarma",
+                disable_sos: "Desactivar Alerta SOS", safe_radius: "Radi Segur (Perímetre)", meters: "metres",
+                center_gps: "Centrar la meva Ubicació", devices_connected: "Dispositius Connectats", accuracy: "Precisió:",
+                open_ar: "Obrir Càmera RA", tips: "Consells", live: "En Viu", room_code: "Codi de Sala:",
+                cam_ra_active: "Càmera RA Activa", tips_title: "Protocol Obligatori Anti-Pèrdua",
+                tip_1: "<strong>1. Polsera amb Telèfon:</strong> Escriu el teu número mòbil amb retolador indeleble a la polsera del menor.",
+                tip_2: "<strong>2. Punt de Trobada Fix:</strong> Acorda un lloc visible en entrar (p. ex., sota el cartell d'Info).",
+                tip_3: "<strong>3. Foto Actualitzada:</strong> Fes-los una foto de cos sencer just abans d'entrar per saber exacta la roba que porten.",
+                understood: "Entès", transmit_gps: "Transmetre GPS al Grup", member_name_label: "Nom / Motiu de l'integrant:",
+                gps_transmission: "Transmissió GPS", activate_transmit: "¡Activar i Transmetre GPS Ja!",
+                link_phone: "Vincular Telèfon Integrant", scan_qr_desc: "Escaneja el codi QR amb la càmera del dispositiu a rastrejar.",
+                point_camera: "Apunta amb la càmera de l'altre telèfon", short_code: "Codi de Sala Curt:", change_room: "Canviar Sala",
+                copy_link: "O copia l'enllaç directe:", copy: "Copiar", create_room_title: "Crear Sala Privada Única",
+                create_room_desc: "Introdueix un nom exclusiu per a la teva sala de monitorització. Si la sala ja està activa amb un altre líder, només s'hi podrà ingressar escanejant el seu codi QR.",
+                room_name_label: "Nom de la Sala:", room_hint: "Suggeriment: Usa un nom personalitzat únic amb el teu cognom o data.",
+                verify_register: "VERIFICAR I REGISTRAR SALA", waiting_signal: "Esperant senyal a la sala",
+                scan_qr_msg: "Obre la càmera de l'altre telèfon i escaneja el QR per vincular-lo.", view_qr: "Veure Codi QR"
+            },
+            es: {
+                room_label: "Sala:", unconfigured: "Sin Configurar", my_name: "Mi nombre:", cam_ra: "Cámara RA",
+                private_room: "Sala Privada", alarm: "Alarma", link_device: "Vincular", transmitting: "TRANSMITIENDO GPS AL GRUPO",
+                edit_name: "Editar Nombre", perimeter_alert: "¡ALERTA DE PERÍMETRO SEGURA!", silence_alarm: "Silenciar Alarma",
+                disable_sos: "Desactivar Alerta SOS", safe_radius: "Radio Seguro (Perímetro)", meters: "metros",
+                center_gps: "Centrar mi Ubicación", devices_connected: "Dispositivos Conectados", accuracy: "Precisión:",
+                open_ar: "Abrir Cámara RA", tips: "Consejos", live: "En Vivo", room_code: "Código de Sala:",
+                cam_ra_active: "Cámara RA Activa", tips_title: "Protocolo Obligatorio Anti-Pérdida",
+                tip_1: "<strong>1. Pulsera con Teléfono:</strong> Escribe tu número móvil con rotulador indeleble en la pulsera del menor.",
+                tip_2: "<strong>2. Punto de Encuentro Fijo:</strong> Acuerda un lugar visible al entrar (p. ej., bajo el cartel de Info).",
+                tip_3: "<strong>3. Foto Actualizada:</strong> Hazles una foto de cuerpo entero justo antes de entrar para saber exacta la ropa que llevan.",
+                understood: "Entendido", transmit_gps: "Transmitir GPS al Grupo", member_name_label: "Nombre / Apodo del integrante:",
+                gps_transmission: "Transmisión GPS", activate_transmit: "¡Activar y Transmitir GPS Ya!",
+                link_phone: "Vincular Teléfono Integrante", scan_qr_desc: "Escanea el código QR con la cámara del dispositivo a rastrear.",
+                point_camera: "Apunta con la cámara del otro teléfono", short_code: "Código de Sala Corto:", change_room: "Cambiar Sala",
+                copy_link: "O copia el enlace directo:", copy: "Copiar", create_room_title: "Crear Sala Privada Única",
+                create_room_desc: "Introduce un nombre exclusivo para tu sala de monitoreo. Si la sala ya está activa con otro líder, solo se podrá ingresar escaneando su código QR.",
+                room_name_label: "Nombre de la Sala:", room_hint: "Sugerencia: Usa un nombre personalizado único con tu apellido o fecha.",
+                verify_register: "VERIFICAR Y REGISTRAR SALA", waiting_signal: "Esperando señal en la sala",
+                scan_qr_msg: "Abre la cámara del otro teléfono y escanea el QR para vincularlo.", view_qr: "Ver Código QR"
+            },
+            en: {
+                room_label: "Room:", unconfigured: "Not Configured", my_name: "My name:", cam_ra: "AR Camera",
+                private_room: "Private Room", alarm: "Alarm", link_device: "Link", transmitting: "TRANSMITTING GPS TO GROUP",
+                edit_name: "Edit Name", perimeter_alert: "SAFE PERIMETER ALERT!", silence_alarm: "Silence Alarm",
+                disable_sos: "Disable SOS Alert", safe_radius: "Safe Radius (Perimeter)", meters: "meters",
+                center_gps: "Center my Location", devices_connected: "Connected Devices", accuracy: "Accuracy:",
+                open_ar: "Open AR Camera", tips: "Tips", live: "Live", room_code: "Room Code:",
+                cam_ra_active: "AR Camera Active", tips_title: "Mandatory Anti-Loss Protocol",
+                tip_1: "<strong>1. Phone Bracelet:</strong> Write your mobile number with a permanent marker on the child's bracelet.",
+                tip_2: "<strong>2. Fixed Meeting Point:</strong> Agree on a visible place upon entering (e.g., under the Info sign).",
+                tip_3: "<strong>3. Updated Photo:</strong> Take a full-body photo right before entering to know exactly what they are wearing.",
+                understood: "Understood", transmit_gps: "Transmit GPS to Group", member_name_label: "Member Name / Nickname:",
+                gps_transmission: "GPS Transmission", activate_transmit: "Activate and Transmit GPS Now!",
+                link_phone: "Link Member Phone", scan_qr_desc: "Scan the QR code with the camera of the device to track.",
+                point_camera: "Point with the other phone's camera", short_code: "Short Room Code:", change_room: "Change Room",
+                copy_link: "Or copy the direct link:", copy: "Copy", create_room_title: "Create Unique Private Room",
+                create_room_desc: "Enter a unique name for your monitoring room. If the room is already active with another leader, you can only enter by scanning their QR code.",
+                room_name_label: "Room Name:", room_hint: "Hint: Use a unique custom name with your last name or date.",
+                verify_register: "VERIFY AND REGISTER ROOM", waiting_signal: "Waiting for signal in room",
+                scan_qr_msg: "Open the other phone's camera and scan the QR to link it.", view_qr: "View QR Code"
+            },
+            fr: {
+                room_label: "Salle:", unconfigured: "Non Configuré", my_name: "Mon nom:", cam_ra: "Caméra RA",
+                private_room: "Salle Privée", alarm: "Alarme", link_device: "Lier", transmitting: "TRANSMISSION GPS AU GROUPE",
+                edit_name: "Modifier le Nom", perimeter_alert: "ALERTE DE PÉRIMÈTRE SÉCURISÉ!", silence_alarm: "Mettre sous silence",
+                disable_sos: "Désactiver l'alerte SOS", safe_radius: "Rayon Sécurisé (Périmètre)", meters: "mètres",
+                center_gps: "Centrer ma Position", devices_connected: "Appareils Connectés", accuracy: "Précision:",
+                open_ar: "Ouvrir Caméra RA", tips: "Conseils", live: "En Direct", room_code: "Code de Salle:",
+                cam_ra_active: "Caméra RA Active", tips_title: "Protocole Anti-Perte Obligatoire",
+                tip_1: "<strong>1. Bracelet Téléphone:</strong> Écrivez votre numéro de mobile avec un marqueur indélébile sur le bracelet de l'enfant.",
+                tip_2: "<strong>2. Point de Rencontre Fixe:</strong> Convenez d'un endroit visible en entrant (par ex., sous le panneau Info).",
+                tip_3: "<strong>3. Photo Actualisée:</strong> Prenez une photo de tout leur corps juste avant d'entrer pour savoir exactement ce qu'ils portent.",
+                understood: "Compris", transmit_gps: "Transmettre GPS au Groupe", member_name_label: "Nom / Surnom du membre:",
+                gps_transmission: "Transmission GPS", activate_transmit: "Activer et Transmettre GPS Maintenant!",
+                link_phone: "Lier le Téléphone du Membre", scan_qr_desc: "Scannez le code QR avec l'appareil photo du dispositif à suivre.",
+                point_camera: "Pointez avec la caméra de l'autre téléphone", short_code: "Code de Salle Court:", change_room: "Changer de Salle",
+                copy_link: "Ou copiez le lien direct:", copy: "Copier", create_room_title: "Créer une Salle Privée Unique",
+                create_room_desc: "Saisissez un nom unique pour votre salle de surveillance. Si la salle est déjà active avec un autre leader, vous ne pourrez y accéder qu'en scannant son code QR.",
+                room_name_label: "Nom de la Salle:", room_hint: "Astuce: Utilisez un nom personnalisé unique avec votre nom de famille ou la date.",
+                verify_register: "VÉRIFIER ET ENREGISTRER LA SALLE", waiting_signal: "En attente de signal dans la salle",
+                scan_qr_msg: "Ouvrez l'appareil photo de l'autre téléphone et scannez le QR pour le lier.", view_qr: "Voir le Code QR"
+            },
+            de: {
+                room_label: "Raum:", unconfigured: "Nicht Konfiguriert", my_name: "Mein Name:", cam_ra: "AR-Kamera",
+                private_room: "Privater Raum", alarm: "Alarm", link_device: "Verbinden", transmitting: "GPS AN GRUPPE ÜBERTRAGEN",
+                edit_name: "Name Bearbeiten", perimeter_alert: "SICHERER PERIMETER ALARM!", silence_alarm: "Alarm Stummschalten",
+                disable_sos: "SOS-Alarm Deaktivieren", safe_radius: "Sicherer Radius (Perimeter)", meters: "Meter",
+                center_gps: "Meine Position Zentrieren", devices_connected: "Verbundene Geräte", accuracy: "Genauigkeit:",
+                open_ar: "AR-Kamera Öffnen", tips: "Tipps", live: "Live", room_code: "Raumcode:",
+                cam_ra_active: "AR-Kamera Aktiv", tips_title: "Obligatorisches Anti-Verlust-Protokoll",
+                tip_1: "<strong>1. Telefon-Armband:</strong> Schreiben Sie Ihre Handynummer mit einem wasserfesten Stift auf das Armband des Kindes.",
+                tip_2: "<strong>2. Fester Treffpunkt:</strong> Vereinbaren Sie beim Betreten einen sichtbaren Ort (z. B. unter dem Info-Schild).",
+                tip_3: "<strong>3. Aktualisiertes Foto:</strong> Machen Sie kurz vor dem Betreten ein Ganzkörperfoto, um genau zu wissen, was sie tragen.",
+                understood: "Verstanden", transmit_gps: "GPS an Gruppe Übertragen", member_name_label: "Mitgliedsname / Spitzname:",
+                gps_transmission: "GPS-Übertragung", activate_transmit: "GPS Jetzt Aktivieren und Übertragen!",
+                link_phone: "Mitgliedstelefon Verbinden", scan_qr_desc: "Scannen Sie den QR-Code mit der Kamera des zu verfolgenden Geräts.",
+                point_camera: "Richten Sie die Kamera des anderen Telefons aus", short_code: "Kurzer Raumcode:", change_room: "Raum Wechseln",
+                copy_link: "Oder kopieren Sie den direkten Link:", copy: "Kopieren", create_room_title: "Einzigartigen Privaten Raum Erstellen",
+                create_room_desc: "Geben Sie einen eindeutigen Namen für Ihren Überwachungsraum ein. Wenn der Raum bereits bei einem anderen Leiter aktiv ist, können Sie ihn nur betreten, indem Sie dessen QR-Code scannen.",
+                room_name_label: "Raumname:", room_hint: "Tipp: Verwenden Sie einen eindeutigen benutzerdefinierten Namen mit Ihrem Nachnamen oder Datum.",
+                verify_register: "RAUM ÜBERPRÜFEN UND REGISTRIEREN", waiting_signal: "Warten auf Signal im Raum",
+                scan_qr_msg: "Öffnen Sie die Kamera des anderen Telefons und scannen Sie den QR, um es zu verbinden.", view_qr: "QR-Code Anzeigen"
+            },
+            zh: {
+                room_label: "房间:", unconfigured: "未配置", my_name: "我的名字:", cam_ra: "AR相机",
+                private_room: "私人房间", alarm: "警报", link_device: "链接", transmitting: "正在向群组传输GPS",
+                edit_name: "编辑名字", perimeter_alert: "安全周界警报！", silence_alarm: "静音警报",
+                disable_sos: "禁用SOS警报", safe_radius: "安全半径（周界）", meters: "米",
+                center_gps: "以我为中心", devices_connected: "已连接设备", accuracy: "准确度:",
+                open_ar: "打开AR相机", tips: "提示", live: "实时", room_code: "房间代码:",
+                cam_ra_active: "AR相机已激活", tips_title: "强制防丢失协议",
+                tip_1: "<strong>1. 电话手环:</strong> 用不可磨灭的记号笔在孩子的手环上写下您的手机号码。",
+                tip_2: "<strong>2. 固定集合点:</strong> 进入时商定一个显眼的地方（例如，在信息标志下）。",
+                tip_3: "<strong>3. 最新照片:</strong> 进入前拍一张全身照，以确切了解他们穿着什么。",
+                understood: "明白了", transmit_gps: "向群组传输GPS", member_name_label: "成员名字 / 昵称:",
+                gps_transmission: "GPS传输", activate_transmit: "立即激活并传输GPS！",
+                link_phone: "链接成员电话", scan_qr_desc: "使用要跟踪的设备的相机扫描QR码。",
+                point_camera: "用另一部手机的相机对准", short_code: "短房间代码:", change_room: "更改房间",
+                copy_link: "或复制直接链接:", copy: "复制", create_room_title: "创建独特的私人房间",
+                create_room_desc: "为您的监控房间输入一个独特的名称。如果该房间已被另一位领导者激活，您只能通过扫描他们的QR码来进入。",
+                room_name_label: "房间名称:", room_hint: "提示: 使用包含您的姓氏或日期的独特自定义名称。",
+                verify_register: "验证并注册房间", waiting_signal: "在房间中等待信号",
+                scan_qr_msg: "打开另一部手机的相机并扫描QR码以进行链接。", view_qr: "查看QR码"
+            }
+        };
+
+        window.toggleLangMenu = function() {
+            document.getElementById('langDropdown').classList.toggle('hidden');
+        };
+
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('langDropdown');
+            const btn = document.getElementById('langToggleBtn');
+            if (dropdown && !dropdown.classList.contains('hidden') && !dropdown.contains(event.target) && !btn.contains(event.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        window.setLanguage = function(lang) {
+            window.currentLang = lang;
+            localStorage.setItem('concert_lang', lang);
+            document.getElementById('langDropdown').classList.add('hidden');
+            
+            const iconMap = {
+                'ca': '<svg class="w-5 h-3.5 rounded-sm" viewBox="0 0 16 12" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="12" fill="#FFC400"/><rect y="1.33" width="16" height="1.33" fill="#DA121A"/><rect y="4" width="16" height="1.33" fill="#DA121A"/><rect y="6.66" width="16" height="1.33" fill="#DA121A"/><rect y="9.33" width="16" height="1.33" fill="#DA121A"/></svg>',
+                'es': '🇪🇸',
+                'en': '🇬🇧',
+                'fr': '🇫🇷',
+                'de': '🇩🇪',
+                'zh': '🇨🇳'
+            };
+            const langIcon = document.getElementById('currentLangIcon');
+            if (langIcon) langIcon.innerHTML = iconMap[lang];
+
+            window.applyTranslations();
+        };
+
+        window.applyTranslations = function() {
+            const t = window.translations[window.currentLang];
+            if (!t) return;
+            
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) {
+                    el.innerHTML = t[key];
+                }
+            });
+
+            const insideCountBadge = document.getElementById('insideCountBadge');
+            if(insideCountBadge) {
+                insideCountBadge.innerHTML = `${groupMembers.length} <span data-i18n="devices_connected">${t.devices_connected}</span>`;
+            }
+
+            renderRoster(); // Updates dynamic internal texts
+        };
+
+        // DEFENSIVE FIREBASE INITIALIZATION
+        async function initFirebase() {
+            try {
+                const firebaseConfig = { apiKey: "demo", authDomain: "demo.firebaseapp.com", projectId: "demo" };
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                await signInAnonymously(auth);
+                onAuthStateChanged(auth, (u) => { if (u) currentUser = u; });
+            } catch(e) {
+                console.warn("Firebase falló al inicializar, continuando en modo local/MQTT puro.", e);
+            }
+        }
+
+        // GLOBAL EXPOSURE FOR HTML EVENT LISTENERS
         window.openHostRoomModal = function(customError) {
             const modal = document.getElementById('hostRoomModal');
             modal.classList.remove('hidden');
+
             const nameInput = document.getElementById('hostRoomNameInput');
             const feedback = document.getElementById('roomClaimFeedback');
             const closeBtn = document.getElementById('closeHostRoomBtn');
@@ -610,13 +808,14 @@
         };
 
         window.editHostName = function() {
-            const newName = prompt("Introduce tu nombre para que los demás teléfonos del grupo te identifiquen:", myRegisteredName);
-            if (newName && newName.trim().length > 0) {
+            const currentName = myRegisteredName || 'Líder GPS';
+            const newName = prompt("Introduce tu nombre:", currentName);
+            if (newName !== null && newName.trim().length > 0) {
                 myRegisteredName = newName.trim();
                 localStorage.setItem('concert_my_name', myRegisteredName);
                 updateHostUI();
-                if (currentPosCache) pushLocationToServer(currentPosCache.lat, currentPosCache.lng, isSosActive);
-                else if (parentPosition) pushLocationToServer(parentPosition.lat, parentPosition.lng, isSosActive);
+                if (currentPosCache) pushLocationToServer(currentPosCache.lat, currentPosCache.lng);
+                else if (parentPosition) pushLocationToServer(parentPosition.lat, parentPosition.lng);
                 showToastNotification(`Tu nombre visible ha cambiado a: ${myRegisteredName}`);
             }
         };
@@ -627,7 +826,10 @@
             modal.classList.remove('hidden');
 
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try { const p = await DeviceOrientationEvent.requestPermission(); if (p === 'granted') initOrientationSensor(); } catch (e) {}
+                try {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission === 'granted') initOrientationSensor();
+                } catch (e) {}
             } else { initOrientationSensor(); }
 
             try {
@@ -637,7 +839,9 @@
                 try {
                     arVideoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
                     video.srcObject = arVideoStream;
-                } catch (err2) { alertModal("No se pudo acceder a la cámara. Verifica los permisos del navegador."); }
+                } catch (fallbackErr) {
+                    alertModal("No se pudo acceder a la cámara. Verifica los permisos del navegador.");
+                }
             }
             startARLoop();
         };
@@ -650,15 +854,15 @@
 
         window.sendSosSignal = async function() {
             isSosActive = true;
-            if (currentPosCache) await pushLocationToServer(currentPosCache.lat, currentPosCache.lng, true);
-            else await pushLocationToServer(parentPosition.lat, parentPosition.lng, true);
+            if (currentPosCache) await pushLocationToServer(currentPosCache.lat, currentPosCache.lng);
+            else await pushLocationToServer(parentPosition.lat, parentPosition.lng);
             alertModal("🚨 ¡Alerta SOS enviada! El grupo ha sido notificado con tu ubicación exacta.");
         };
 
         window.dismissSosAlert = function() {
+            isSosActive = false;
             if (mqttClient && mqttClient.connected && activeGroupId) {
-                const topic = `concertsafeguard/v2/room_${activeGroupId}`;
-                mqttClient.publish(topic, JSON.stringify({ type: 'clear_sos', targetId: 'all', id: myDeviceId }), { qos: 0 });
+                mqttClient.publish(`concertsafeguard/v2/room_${activeGroupId}`, JSON.stringify({ type: 'clear_sos', targetId: 'all', id: myDeviceId }), { qos: 0 });
             }
             groupMembersMap.forEach(m => m.sos = false);
             document.getElementById('sosAlertBanner').classList.add('hidden');
@@ -667,7 +871,8 @@
         };
 
         window.silenceAlarm = function() {
-            stopSirenSound();
+            stopPerimeterSound();
+            stopSosSound();
             document.getElementById('perimeterAlertBanner').classList.add('hidden');
         };
 
@@ -677,20 +882,43 @@
             const alarmIcon = document.getElementById('alarmIcon');
 
             if (isAudioAlarmEnabled) {
-                if (btnText) btnText.innerText = "Alarma";
+                if (btnText) btnText.innerHTML = window.translations[window.currentLang]?.alarm || "Alarma";
                 if (alarmIcon) alarmIcon.className = "fa-solid fa-bell text-amber-400";
             } else {
-                if (btnText) btnText.innerText = "Silenciada";
+                if (btnText) btnText.innerHTML = window.translations[window.currentLang]?.silence_alarm || "Silenciada";
                 if (alarmIcon) alarmIcon.className = "fa-solid fa-bell-slash text-slate-500";
-                stopSirenSound();
+                stopPerimeterSound();
                 stopSosSound();
             }
+        };
+
+        window.updateGeofenceRadius = function(val) {
+            safeRadiusMeters = parseInt(val);
+            const display = document.getElementById('radiusDisplay');
+            const meterStr = window.translations[window.currentLang]?.meters || "metros";
+            if (display) display.innerHTML = `${safeRadiusMeters} <span data-i18n="meters">${meterStr}</span>`;
+            if (radiusCircle) radiusCircle.setRadius(safeRadiusMeters);
+            checkGeofenceAlerts();
+            renderRoster();
+            updateMapMarkers();
+        };
+
+        window.clearSosSignal = function(memberId) {
+            if (mqttClient && mqttClient.connected) {
+                mqttClient.publish(`concertsafeguard/v2/room_${activeGroupId}`, JSON.stringify({ type: 'clear_sos', targetId: memberId, id: myDeviceId }), { qos: 0 });
+            }
+            if (groupMembersMap.has(memberId)) groupMembersMap.get(memberId).sos = false;
+            syncRosterAndMap();
+            showToastNotification("🟢 Alerta SOS desactivada para el integrante.");
         };
 
         window.removeMember = function(memberId, name) {
             removedMemberIds.add(memberId);
             groupMembersMap.delete(memberId);
-            if (memberMarkers[memberId]) { map.removeLayer(memberMarkers[memberId]); delete memberMarkers[memberId]; }
+            if (memberMarkers[memberId]) {
+                map.removeLayer(memberMarkers[memberId]);
+                delete memberMarkers[memberId];
+            }
             if (mqttClient && mqttClient.connected && activeGroupId) {
                 mqttClient.publish(`concertsafeguard/v2/room_${activeGroupId}`, JSON.stringify({ type: 'kick', targetId: memberId, id: myDeviceId }), { qos: 0 });
             }
@@ -698,7 +926,7 @@
                 try { deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', `positions_${activeGroupId}`, memberId)).catch(()=>{}); } catch(e){}
             }
             syncRosterAndMap();
-            showToastNotification(`Móvil desvinculado: ${name}`);
+            showToastNotification(`Dispositivo desvinculado: ${name}`);
         };
 
         window.handleHostRoomSubmit = async function(e) {
@@ -706,20 +934,23 @@
             const nameInput = document.getElementById('hostRoomNameInput');
             const submitBtn = document.getElementById('claimRoomSubmitBtn');
             const feedback = document.getElementById('roomClaimFeedback');
+
             if (!nameInput || !submitBtn) return;
             const rawRoom = nameInput.value;
 
             submitBtn.disabled = true;
             submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin mr-1"></i> VERIFICANDO SALA...`;
+
             if (feedback) {
                 feedback.className = "p-3 rounded-xl text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 block";
-                feedback.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin mr-1"></i> Comprobando disponibilidad de la sala en tiempo real...`;
+                feedback.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin mr-1"></i> Comprobando disponibilidad en tiempo real...`;
             }
 
             try {
                 const result = await attemptRoomClaim(rawRoom);
                 if (result.success) {
                     const cleanRoom = rawRoom.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+
                     groupMembersMap.clear();
                     Object.keys(memberMarkers).forEach(id => { if (memberMarkers[id] && map) map.removeLayer(memberMarkers[id]); });
                     memberMarkers = {};
@@ -754,23 +985,24 @@
                     }
                 }
             } catch (err) {
-                console.error("Room claim submit error:", err);
                 if (feedback) {
                     feedback.className = "p-3 rounded-xl text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 block";
                     feedback.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1 text-rose-400"></i> Error al verificar sala. Inténtalo de nuevo.`;
                 }
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = `<i class="fa-solid fa-shield-check text-sm"></i> <span>VERIFICAR Y REGISTRAR SALA</span>`;
+                const t = window.translations[window.currentLang] || window.translations['ca'];
+                submitBtn.innerHTML = `<i class="fa-solid fa-shield-check text-sm"></i> <span>${t.verify_register}</span>`;
             }
         };
 
         window.promptManualGroupCode = function() { window.openHostRoomModal(); };
-
         window.openScanToLocateModal = function() {
-            if (!activeGroupId || !isRoomClaimedByMe) { window.openHostRoomModal("Primero debes configurar y registrar un nombre de sala único."); return; }
-            const modal = document.getElementById('shareModal');
-            modal.classList.remove('hidden');
+            if (!activeGroupId || !isRoomClaimedByMe) {
+                window.openHostRoomModal("Primero debes configurar y registrar un nombre de sala único.");
+                return;
+            }
+            document.getElementById('shareModal').classList.remove('hidden');
             const joinUrl = new URL(window.location.href);
             joinUrl.searchParams.set('joinGroup', '1');
             joinUrl.searchParams.set('groupId', activeGroupId);
@@ -779,61 +1011,15 @@
             qrContainer.innerHTML = '';
             try { new QRCode(qrContainer, { text: joinUrl.href, width: 150, height: 150, colorDark: "#0f172a", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M }); } catch(e){}
         };
-
         window.closeShareModal = function() { document.getElementById('shareModal').classList.add('hidden'); };
-        window.copyGroupLink = function() { const c = document.getElementById('groupCodeInput'); c.select(); document.execCommand('copy'); alertModal(`✅ Enlace copiado. Código de sala: ${activeGroupId}.`); };
+        window.copyGroupLink = function() { const codeInput = document.getElementById('groupCodeInput'); codeInput.select(); document.execCommand('copy'); alertModal(`✅ Enlace copiado.`); };
         window.openSafetyTipsModal = function() { document.getElementById('safetyTipsModal').classList.remove('hidden'); };
         window.openJoinModalAgain = function() { document.getElementById('joinGroupModal').classList.remove('hidden'); };
-
-        window.centerOnParent = function() {
-            window.startHostGpsTracking();
-            if (map) { map.flyTo([parentPosition.lat, parentPosition.lng], 18); if (parentMarker) parentMarker.openPopup(); }
-        };
-
-        window.centerOnMember = function(memberId) {
-            const m = groupMembersMap.get(memberId);
-            if (m && map) { map.flyTo([m.lat, m.lng], 19, { animate: true }); if (memberMarkers[memberId]) memberMarkers[memberId].openPopup(); }
-        };
-
-        window.toggleCompassOrientation = async function() {
-            isCompassMapOriented = !isCompassMapOriented;
-            const btnIcon = document.getElementById('compassIcon');
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try { const p = await DeviceOrientationEvent.requestPermission(); if (p === 'granted') initOrientationSensor(); } catch (e) {}
-            } else { initOrientationSensor(); }
-
-            if (isCompassMapOriented) {
-                if (btnIcon) btnIcon.className = "fa-solid fa-compass text-emerald-400 text-xs sm:text-sm animate-spin-slow";
-                updateMapOrientation(deviceHeading);
-                showToastNotification("🧭 Modo Brújula Activado: El mapa gira según giras el teléfono.");
-            } else {
-                if (btnIcon) btnIcon.className = "fa-solid fa-compass text-indigo-400 text-xs sm:text-sm";
-                const mapEl = document.getElementById('map');
-                if (mapEl) mapEl.style.transform = 'rotate(0deg)';
-                showToastNotification("📍 Modo Norte Fijo Activado.");
-            }
-        };
-
-        window.toggleMapFullscreen = function() {
-            const mapContainer = document.getElementById('mapContainer');
-            const icon = document.getElementById('fullscreenIcon');
-            if (!document.fullscreenElement) {
-                if (mapContainer.requestFullscreen) mapContainer.requestFullscreen(); else if (mapContainer.webkitRequestFullscreen) mapContainer.webkitRequestFullscreen();
-                if (icon) icon.className = "fa-solid fa-compress text-indigo-400 text-xs sm:text-sm";
-                if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
-            } else {
-                if (document.exitFullscreen) document.exitFullscreen(); else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-                if (icon) icon.className = "fa-solid fa-expand text-indigo-400 text-xs sm:text-sm";
-                if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
-            }
-            setTimeout(() => { if (map) { map.invalidateSize(); map.panTo([parentPosition.lat, parentPosition.lng]); } }, 300);
-        };
 
         window.handleDeviceRegistration = function(e) {
             e.preventDefault();
             const nameInput = document.getElementById('joinNameInput').value.trim();
             if (!nameInput) return;
-
             myRegisteredName = nameInput;
             localStorage.setItem('concert_my_name', nameInput);
             removedMemberIds.delete(myDeviceId);
@@ -861,81 +1047,99 @@
                     btn.innerHTML = `<i class="fa-solid fa-check text-white mr-1"></i> ¡GPS Transmitiendo en Vivo!`;
                     btn.classList.remove('from-indigo-600', 'via-purple-600', 'to-pink-600');
                     btn.classList.add('bg-emerald-600');
-                    await pushLocationToServer(pos.coords.latitude, pos.coords.longitude, isSosActive);
+
+                    await pushLocationToServer(pos.coords.latitude, pos.coords.longitude);
+
                     setTimeout(() => {
                         document.getElementById('joinGroupModal').classList.add('hidden');
                         btn.disabled = false;
                         btn.classList.remove('bg-emerald-600');
                         btn.classList.add('from-indigo-600', 'via-purple-600', 'to-pink-600');
-                        btn.innerHTML = `<i class="fa-solid fa-location-dot"></i> ¡Activar y Transmitir GPS Ya!`;
+                        const t = window.translations[window.currentLang] || window.translations['ca'];
+                        btn.innerHTML = `<i class="fa-solid fa-location-dot"></i> ${t.activate_transmit}`;
                     }, 1000);
                 };
+
                 const onPosError = (err) => {
                     if (hasResolved) return;
                     hasResolved = true;
                     btn.disabled = false;
                     btn.innerHTML = `<i class="fa-solid fa-location-dot"></i> Reintentar Permiso GPS`;
-                    pushLocationToServer(parentPosition.lat, parentPosition.lng, isSosActive);
+                    pushLocationToServer(parentPosition.lat, parentPosition.lng);
                     document.getElementById('joinGroupModal').classList.add('hidden');
                     showToastNotification("Transmisión activada con ubicación base.");
                 };
+
                 navigator.geolocation.getCurrentPosition(onPosSuccess, onPosError, { enableHighAccuracy: true, maximumAge: 3000, timeout: 5000 });
                 navigator.geolocation.watchPosition(
-                    (pos) => {
-                        onPosSuccess(pos);
-                        pushLocationToServer(pos.coords.latitude, pos.coords.longitude, isSosActive);
-                    },
-                    (err) => console.warn("Watch pos info:", err),
+                    (pos) => { onPosSuccess(pos); pushLocationToServer(pos.coords.latitude, pos.coords.longitude); },
+                    (err) => console.warn("Watch position info:", err),
                     { enableHighAccuracy: false, maximumAge: 5000, timeout: 10000 }
                 );
             } else {
                 btn.disabled = false;
-                btn.innerHTML = `<i class="fa-solid fa-location-dot"></i> Activar Transmisión GPS`;
+                const t = window.translations[window.currentLang] || window.translations['ca'];
+                btn.innerHTML = `<i class="fa-solid fa-location-dot"></i> ${t.activate_transmit}`;
                 alertModal("El navegador de este teléfono no soporta geolocalización GPS.");
             }
         };
 
-        window.startHostGpsTracking = function() {
-            if ("geolocation" in navigator) {
-                const onPosUpdate = (position) => {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-                    const acc = Math.round(position.coords.accuracy);
+        window.centerOnParent = function() {
+            window.startHostGpsTracking();
+            if (map) { map.flyTo([parentPosition.lat, parentPosition.lng], 18); if (parentMarker) parentMarker.openPopup(); }
+        };
 
-                    const isFirstFix = !currentPosCache;
-                    parentPosition = { lat, lng };
-                    currentPosCache = { lat, lng };
+        window.toggleCompassOrientation = async function() {
+            isCompassMapOriented = !isCompassMapOriented;
+            const btnIcon = document.getElementById('compassIcon');
 
-                    if (map && parentMarker && radiusCircle) {
-                        parentMarker.setLatLng([lat, lng]);
-                        radiusCircle.setLatLng([lat, lng]);
-                        if (isFirstFix) map.setView([lat, lng], 18);
-                    }
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission === 'granted') initOrientationSensor();
+                } catch (e) {}
+            }
 
-                    const accText = document.getElementById('gpsAccuracyText');
-                    if (accText) accText.innerText = `±${acc}m`;
-
-                    if (myRegisteredName && (isRoomClaimedByMe || isJoinedAsMember)) {
-                        pushLocationToServer(lat, lng, isSosActive);
-                    }
-
-                    updateMapMarkers();
-                    checkGeofenceAlerts();
-                    renderRoster();
-                };
-
-                navigator.geolocation.getCurrentPosition(onPosUpdate, (err) => console.warn("GPS Host initial err:", err), { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 });
-                if (hostWatchId !== null) navigator.geolocation.clearWatch(hostWatchId);
-                hostWatchId = navigator.geolocation.watchPosition(onPosUpdate, (err) => console.warn("GPS Host watch err:", err), { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 });
+            if (isCompassMapOriented) {
+                if (btnIcon) btnIcon.className = "fa-solid fa-compass text-emerald-400 text-xs sm:text-sm animate-spin-slow";
+                updateMapOrientation(deviceHeading);
+                showToastNotification("🧭 Modo Brújula Activado.");
+            } else {
+                if (btnIcon) btnIcon.className = "fa-solid fa-compass text-indigo-400 text-xs sm:text-sm";
+                const mapEl = document.getElementById('map');
+                if (mapEl) mapEl.style.transform = 'rotate(0deg)';
+                showToastNotification("📍 Modo Norte Fijo Activado.");
             }
         };
 
+        window.toggleMapFullscreen = function() {
+            const mapContainer = document.getElementById('mapContainer');
+            const icon = document.getElementById('fullscreenIcon');
 
-        // --- CORE LOGIC FUNCTIONS ---
+            if (!document.fullscreenElement) {
+                if (mapContainer.requestFullscreen) mapContainer.requestFullscreen();
+                else if (mapContainer.webkitRequestFullscreen) mapContainer.webkitRequestFullscreen();
+                if (icon) icon.className = "fa-solid fa-compress text-indigo-400 text-xs sm:text-sm";
+                if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                if (icon) icon.className = "fa-solid fa-expand text-indigo-400 text-xs sm:text-sm";
+                if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
+            }
+            setTimeout(() => { if (map) { map.invalidateSize(); map.panTo([parentPosition.lat, parentPosition.lng]); } }, 300);
+        };
+
+        window.centerOnMember = function(memberId) {
+            const m = groupMembersMap.get(memberId);
+            if (m && map) { map.flyTo([m.lat, m.lng], 19, { animate: true }); if (memberMarkers[memberId]) memberMarkers[memberId].openPopup(); }
+        };
+
+        // INTERNAL LOGIC
         function initLeafletMap() {
             if (map) { map.remove(); map = null; }
             map = L.map('map', { zoomControl: false }).setView([parentPosition.lat, parentPosition.lng], 18);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abcd', maxZoom: 20 }).addTo(map);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap', maxZoom: 20 }).addTo(map);
             L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
             const parentIcon = L.divIcon({
@@ -943,35 +1147,46 @@
                 html: `<div class="w-9 h-9 rounded-full bg-indigo-600 border-2 border-white pulse-marker-parent flex items-center justify-center text-white text-xs font-bold shadow-2xl"><i class="fa-solid fa-user-shield"></i></div>`,
                 iconSize: [36, 36], iconAnchor: [18, 18]
             });
-
             parentMarker = L.marker([parentPosition.lat, parentPosition.lng], { icon: parentIcon }).addTo(map);
             parentMarker.bindPopup(`<b>${myRegisteredName || 'Líder GPS'} (Líder)</b><br>Centro del perímetro seguro`);
 
             radiusCircle = L.circle([parentPosition.lat, parentPosition.lng], { color: '#6366f1', fillColor: '#818cf8', fillOpacity: 0.15, weight: 2, dashArray: '6, 6', radius: safeRadiusMeters }).addTo(map);
         }
 
+        window.startHostGpsTracking = function() {
+            if ("geolocation" in navigator) {
+                const onPosUpdate = (position) => {
+                    const lat = position.coords.latitude, lng = position.coords.longitude, acc = Math.round(position.coords.accuracy);
+                    const isFirstFix = !currentPosCache;
+                    parentPosition = { lat, lng }; currentPosCache = { lat, lng };
+                    if (map && parentMarker && radiusCircle) {
+                        parentMarker.setLatLng([lat, lng]); radiusCircle.setLatLng([lat, lng]);
+                        if (isFirstFix) map.setView([lat, lng], 18);
+                    }
+                    const accText = document.getElementById('gpsAccuracyText'); if (accText) accText.innerText = `±${acc}m`;
+                    if (myRegisteredName) pushLocationToServer(lat, lng);
+                    updateMapMarkers(); checkGeofenceAlerts(); renderRoster();
+                };
+                navigator.geolocation.getCurrentPosition(onPosUpdate, (err) => {}, { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 });
+                if (hostWatchId !== null) navigator.geolocation.clearWatch(hostWatchId);
+                hostWatchId = navigator.geolocation.watchPosition(onPosUpdate, (err) => {}, { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 });
+            }
+        };
+
         function updateMapOrientation(heading) {
             deviceHeading = heading;
-            const headingText = document.getElementById('headingText');
-            if (headingText) headingText.innerText = `Rumbo: ${Math.round(heading)}°`;
-            if (isCompassMapOriented) {
-                const mapEl = document.getElementById('map');
-                if (mapEl) mapEl.style.transform = `rotate(${-heading}deg)`;
-            }
+            const headingText = document.getElementById('headingText'); if (headingText) headingText.innerText = `Rumb: ${Math.round(heading)}°`;
+            if (isCompassMapOriented) { const mapEl = document.getElementById('map'); if (mapEl) mapEl.style.transform = `rotate(${-heading}deg)`; }
         }
 
         function updateHostUI() {
-            const displayEl = document.getElementById('hostNameDisplay');
-            const badgeEl = document.getElementById('mapHostNameBadge');
-            if (displayEl) displayEl.innerText = myRegisteredName;
-            if (badgeEl) badgeEl.innerText = myRegisteredName;
+            const displayEl = document.getElementById('hostNameDisplay'), badgeEl = document.getElementById('mapHostNameBadge');
+            if (displayEl) displayEl.innerText = myRegisteredName; if (badgeEl) badgeEl.innerText = myRegisteredName;
             if (parentMarker) parentMarker.bindPopup(`<b>${myRegisteredName} (Líder)</b><br>Centro del perímetro seguro`);
         }
 
         function updateCloudBadge(isConnected, message) {
-            const badge = document.getElementById('cloudStatusBadge');
-            const dot = document.getElementById('cloudStatusDot');
-            const text = document.getElementById('cloudStatusText');
+            const badge = document.getElementById('cloudStatusBadge'), dot = document.getElementById('cloudStatusDot'), text = document.getElementById('cloudStatusText');
             if (badge && text && dot) {
                 if (isConnected) {
                     badge.className = "text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1";
@@ -989,22 +1204,13 @@
             if (mqttClient) { try { mqttClient.end(true); } catch(e){} }
             const brokerUrl = MQTT_BROKERS[currentBrokerIndex];
             updateCloudBadge(false, "Conectando...");
-
             try {
                 mqttClient = mqtt.connect(brokerUrl, { clientId: 'cs_' + myDeviceId + '_' + Math.random().toString(36).substring(2, 6), keepalive: 20, clean: true, connectTimeout: 5000 });
                 mqttClient.on('connect', () => {
-                    updateCloudBadge(true, "Nube Conectada");
-                    if (activeGroupId) {
-                        mqttClient.subscribe(`concertsafeguard/v2/room_${activeGroupId}`, { qos: 0 });
-                        if (mqttClient.connected && activeGroupId) {
-                            mqttClient.publish(`concertsafeguard/v2/room_${activeGroupId}`, JSON.stringify({ type: 'ping', id: myDeviceId }), { qos: 0 });
-                        }
-                    }
-                    if (myRegisteredName && currentPosCache && (isRoomClaimedByMe || isJoinedAsMember)) {
-                        pushLocationToServer(currentPosCache.lat, currentPosCache.lng, isSosActive);
-                    }
+                    updateCloudBadge(true, "Conectat");
+                    if (activeGroupId) { mqttClient.subscribe(`concertsafeguard/v2/room_${activeGroupId}`, { qos: 0 }); broadcastPing(); }
+                    if (myRegisteredName && currentPosCache) broadcastLocationViaMqtt(currentPosCache.lat, currentPosCache.lng);
                 });
-
                 mqttClient.on('message', (topic, message) => {
                     try {
                         const payload = JSON.parse(message.toString());
@@ -1019,80 +1225,67 @@
 
                         if (payload.type === 'kick') {
                             if (payload.targetId) {
-                                removedMemberIds.add(payload.targetId);
-                                groupMembersMap.delete(payload.targetId);
+                                removedMemberIds.add(payload.targetId); groupMembersMap.delete(payload.targetId);
                                 if (memberMarkers[payload.targetId]) { map.removeLayer(memberMarkers[payload.targetId]); delete memberMarkers[payload.targetId]; }
                                 syncRosterAndMap();
-
                                 if (payload.targetId === myDeviceId) {
-                                    isJoinedAsMember = false;
-                                    myRegisteredName = 'Líder GPS';
-                                    localStorage.removeItem('concert_my_name');
-                                    updateHostUI();
-                                    document.getElementById('mobileActiveBanner').classList.add('hidden');
+                                    isJoinedAsMember = false; myRegisteredName = 'Líder GPS'; localStorage.removeItem('concert_my_name');
+                                    updateHostUI(); document.getElementById('mobileActiveBanner').classList.add('hidden');
                                     showToastNotification("Has sido desvinculado del grupo por el administrador.");
                                 }
                             }
                             return;
                         }
 
-                        if (payload.type === 'join') { if (payload.id) removedMemberIds.delete(payload.id); }
-
                         if (payload.type === 'clear_sos') {
                             if (payload.targetId === 'all' || payload.targetId === myDeviceId) isSosActive = false;
-                            if (payload.targetId === 'all') {
-                                groupMembersMap.forEach(m => m.sos = false);
-                            } else if (payload.targetId && groupMembersMap.has(payload.targetId)) {
-                                groupMembersMap.get(payload.targetId).sos = false;
-                            }
-                            syncRosterAndMap();
-                            showToastNotification("🟢 Alerta SOS desactivada.");
-                            return;
+                            if (payload.targetId === 'all') groupMembersMap.forEach(m => m.sos = false);
+                            else if (payload.targetId && groupMembersMap.has(payload.targetId)) groupMembersMap.get(payload.targetId).sos = false;
+                            
+                            const hasAnySos = Array.from(groupMembersMap.values()).some(m => m.sos);
+                            if (!hasAnySos) { document.getElementById('sosAlertBanner').classList.add('hidden'); stopSosSound(); }
+                            syncRosterAndMap(); return;
                         }
 
                         if (payload.type === 'ping' && payload.id !== myDeviceId) {
-                            if (currentPosCache && (isRoomClaimedByMe || isJoinedAsMember)) {
-                                pushLocationToServer(currentPosCache.lat, currentPosCache.lng, isSosActive);
-                            } else if (parentPosition && (isRoomClaimedByMe || isJoinedAsMember)) {
-                                pushLocationToServer(parentPosition.lat, parentPosition.lng, isSosActive);
-                            }
+                            if (currentPosCache) broadcastLocationViaMqtt(currentPosCache.lat, currentPosCache.lng);
+                            else if (!urlParams.get('joinGroup')) broadcastLocationViaMqtt(parentPosition.lat, parentPosition.lng);
                             return;
                         }
 
                         if (payload.id && payload.lat && payload.lng) {
                             if (removedMemberIds.has(payload.id)) return;
+                            if (payload.id === myDeviceId && !isRoomClaimedByMe) return; // Prevent self ghosting on map
 
                             const existing = groupMembersMap.get(payload.id);
-                            if (!existing && payload.id !== myDeviceId) {
-                                showToastNotification(`📱 ¡Móvil conectado: ${payload.name || 'Integrante'}!`);
-                            }
+                            if (!existing && payload.id !== myDeviceId) showToastNotification(`📱 ¡Dispositivo conectado: ${payload.name || 'Integrante'}!`);
 
                             groupMembersMap.set(payload.id, {
-                                id: payload.id,
-                                name: payload.name || 'Dispositivo ' + payload.id.substring(0, 4),
-                                lat: payload.lat,
-                                lng: payload.lng,
-                                battery: payload.battery || 90,
-                                updated: payload.updated || Date.now(),
-                                sos: !!payload.sos,
+                                id: payload.id, name: payload.name || 'Dispositivo ' + payload.id.substring(0, 4), lat: payload.lat, lng: payload.lng,
+                                battery: payload.battery || 90, updated: payload.updated || Date.now(), sos: !!payload.sos,
                                 color: payload.color || '#' + Math.floor(Math.abs(Math.sin(payload.id.charCodeAt(0)) * 16777215)).toString(16).padStart(6, '0')
                             });
+
                             syncRosterAndMap();
+                            if (payload.sos) {
+                                document.getElementById('sosAlertBanner').classList.remove('hidden');
+                                playSosSound();
+                            }
                         }
                     } catch(e){}
                 });
-
-                mqttClient.on('error', () => switchMqttBroker());
-                mqttClient.on('offline', () => switchMqttBroker());
-
-            } catch(e) {
-                switchMqttBroker();
-            }
+                mqttClient.on('error', () => switchMqttBroker()); mqttClient.on('offline', () => switchMqttBroker());
+            } catch(e) { switchMqttBroker(); }
         }
 
-        function switchMqttBroker() {
-            currentBrokerIndex = (currentBrokerIndex + 1) % MQTT_BROKERS.length;
-            setTimeout(initMqttSync, 2000);
+        function switchMqttBroker() { currentBrokerIndex = (currentBrokerIndex + 1) % MQTT_BROKERS.length; setTimeout(initMqttSync, 2000); }
+        function broadcastPing() { if (mqttClient && mqttClient.connected && activeGroupId) mqttClient.publish(`concertsafeguard/v2/room_${activeGroupId}`, JSON.stringify({ type: 'ping', id: myDeviceId }), { qos: 0 }); }
+        function broadcastLocationViaMqtt(lat, lng) {
+            if (mqttClient && mqttClient.connected && activeGroupId && (isRoomClaimedByMe || isJoinedAsMember)) {
+                mqttClient.publish(`concertsafeguard/v2/room_${activeGroupId}`, JSON.stringify({
+                    id: myDeviceId, name: myRegisteredName || 'Líder GPS', lat: lat, lng: lng, battery: 95, updated: Date.now(), sos: isSosActive, color: '#6366f1'
+                }), { qos: 0 });
+            }
         }
 
         function ensureMqttConnected() {
@@ -1102,56 +1295,10 @@
                 let attempts = 0;
                 const checkInterval = setInterval(() => {
                     attempts++;
-                    if (mqttClient && mqttClient.connected) { clearInterval(checkInterval); resolve(true); }
+                    if (mqttClient && mqttClient.connected) { clearInterval(checkInterval); resolve(true); } 
                     else if (attempts >= 25) { clearInterval(checkInterval); resolve(false); }
                 }, 100);
             });
-        }
-
-        async function pushLocationToServer(lat, lng, isSos = false) {
-            if (!lat || !lng) return;
-            currentPosCache = { lat, lng };
-
-            if (mqttClient && mqttClient.connected && activeGroupId && (isRoomClaimedByMe || isJoinedAsMember)) {
-                const topic = `concertsafeguard/v2/room_${activeGroupId}`;
-                const payload = {
-                    id: myDeviceId,
-                    name: myRegisteredName || 'Líder GPS',
-                    lat: lat,
-                    lng: lng,
-                    battery: 95,
-                    updated: Date.now(),
-                    sos: isSos,
-                    color: '#6366f1'
-                };
-                mqttClient.publish(topic, JSON.stringify(payload), { qos: 0 });
-            }
-
-            if (db && currentUser && activeGroupId && (isRoomClaimedByMe || isJoinedAsMember)) {
-                try {
-                    const deviceDoc = doc(db, 'artifacts', appId, 'public', 'data', `positions_${activeGroupId}`, myDeviceId);
-                    setDoc(deviceDoc, {
-                        name: myRegisteredName,
-                        lat: lat,
-                        lng: lng,
-                        battery: 92,
-                        updated: Date.now(),
-                        sos: isSos
-                    }, { merge: true }).catch(() => {});
-                } catch (e) {}
-            }
-
-            gpsSyncCounter++;
-            const syncCountLabel = document.getElementById('mobileSyncCount');
-            const lastSyncLabel = document.getElementById('mobileLastSyncTime');
-            const dot = document.getElementById('syncPulseDot');
-
-            if (dot) dot.className = "fa-solid fa-signal text-emerald-400 mr-1 animate-pulse";
-            if (syncCountLabel) syncCountLabel.innerText = `${gpsSyncCounter} envíos OK`;
-            if (lastSyncLabel) {
-                const nowStr = new Date().toLocaleTimeString();
-                lastSyncLabel.innerText = `Transmitiendo a sala ${activeGroupId} (${nowStr})`;
-            }
         }
 
         async function attemptRoomClaim(requestedRoom) {
@@ -1168,44 +1315,36 @@
                     const docSnap = await getDoc(roomDocRef);
                     if (docSnap.exists()) {
                         const data = docSnap.data();
-                        const isOtherHost = data.hostDeviceId && data.hostDeviceId !== myDeviceId;
-                        const isRecent = (now - (data.lastHeartbeat || 0)) < STALE_THRESHOLD;
-                        if (isOtherHost && isRecent) {
-                            return { success: false, reasonMsg: `La sala '${cleanRoom}' ya está siendo utilizada por ${data.hostName || 'otro Líder'}. Para unirte a su grupo, debes escanear su código QR.` };
+                        if (data.hostDeviceId && data.hostDeviceId !== myDeviceId && (now - (data.lastHeartbeat || 0)) < STALE_THRESHOLD) {
+                            return { success: false, reasonMsg: `La sala '${cleanRoom}' ya está siendo utilizada por ${data.hostName || 'otro Líder'}. Escanea su QR para unirte.` };
                         }
                     }
-                } catch (err) { console.warn("Firestore room claim check warning:", err); }
+                } catch (err) {}
             }
 
             await ensureMqttConnected();
 
             const mqttCheckPromise = new Promise((resolve) => {
-                let isOccupied = false;
-                let rivalHostName = 'otro Líder';
-                let resolved = false;
+                let isOccupied = false; let rivalHostName = 'otro Líder'; let resolved = false;
                 const tempTopic = `concertsafeguard/v2/room_${cleanRoom}`;
-
                 const claimHandler = (topic, message) => {
                     if (topic === tempTopic) {
                         try {
                             const payload = JSON.parse(message.toString());
                             if (payload && (payload.type === 'claim_response' || payload.type === 'host_presence') && payload.hostDeviceId && payload.hostDeviceId !== myDeviceId) {
-                                isOccupied = true;
-                                if (payload.hostName) rivalHostName = payload.hostName;
+                                isOccupied = true; if (payload.hostName) rivalHostName = payload.hostName;
                             }
                         } catch(e) {}
                     }
                 };
 
                 if (mqttClient && mqttClient.connected) {
-                    mqttClient.on('message', claimHandler);
-                    mqttClient.subscribe(tempTopic, { qos: 0 });
+                    mqttClient.on('message', claimHandler); mqttClient.subscribe(tempTopic, { qos: 0 });
                     mqttClient.publish(tempTopic, JSON.stringify({ type: 'claim_query', senderDeviceId: myDeviceId }), { qos: 0 });
                 }
 
                 setTimeout(() => {
-                    if (resolved) return;
-                    resolved = true;
+                    if (resolved) return; resolved = true;
                     if (mqttClient) { try { mqttClient.off('message', claimHandler); mqttClient.unsubscribe(tempTopic); } catch(e) {} }
                     if (isOccupied) resolve({ success: false, reasonMsg: `La sala '${cleanRoom}' ya está activa y siendo utilizada por ${rivalHostName}. Para unirte a su grupo, debes escanear su código QR.` });
                     else resolve({ success: true });
@@ -1217,9 +1356,10 @@
 
             if (db && currentUser) {
                 try {
-                    const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'room_claims', cleanRoom);
-                    await setDoc(roomDocRef, { roomId: cleanRoom, hostDeviceId: myDeviceId, hostName: myRegisteredName || 'Líder GPS', lastHeartbeat: now, createdAt: now }, { merge: true });
-                } catch(e) { console.warn("Failed to set room claim in Firestore:", e); }
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'room_claims', cleanRoom), {
+                        roomId: cleanRoom, hostDeviceId: myDeviceId, hostName: myRegisteredName || 'Líder GPS', lastHeartbeat: now, createdAt: now
+                    }, { merge: true });
+                } catch(e) {}
             }
 
             return { success: true };
@@ -1233,53 +1373,41 @@
                         mqttClient.publish(`concertsafeguard/v2/room_${activeGroupId}`, JSON.stringify({ type: 'host_presence', hostDeviceId: myDeviceId, hostName: myRegisteredName || 'Líder GPS' }), { qos: 0 });
                     }
                     if (db && currentUser) {
-                        try {
-                            const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'room_claims', activeGroupId);
-                            setDoc(roomDocRef, { hostDeviceId: myDeviceId, hostName: myRegisteredName || 'Líder GPS', lastHeartbeat: Date.now() }, { merge: true }).catch(() => {});
-                        } catch(e) {}
+                        try { setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'room_claims', activeGroupId), { hostDeviceId: myDeviceId, hostName: myRegisteredName || 'Líder GPS', lastHeartbeat: Date.now() }, { merge: true }).catch(() => {}); } catch(e) {}
                     }
                 }
             };
-            sendBeat();
-            roomHeartbeatInterval = setInterval(sendBeat, 8000);
+            sendBeat(); roomHeartbeatInterval = setInterval(sendBeat, 8000);
         }
 
         function startFirestorePositionListener() {
             if (firestoreUnsubscribe) { firestoreUnsubscribe(); firestoreUnsubscribe = null; }
             if (db && currentUser && activeGroupId) {
                 try {
-                    const positionsCol = collection(db, 'artifacts', appId, 'public', 'data', `positions_${activeGroupId}`);
-                    firestoreUnsubscribe = onSnapshot(positionsCol, (snapshot) => {
+                    firestoreUnsubscribe = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', `positions_${activeGroupId}`), (snapshot) => {
                         snapshot.forEach((docSnap) => {
                             const data = docSnap.data();
                             if (removedMemberIds.has(docSnap.id)) return;
-                            
+                            if (docSnap.id === myDeviceId && !isRoomClaimedByMe) return; // Prevent self ghosting on map
+
                             if (data && data.lat && data.lng) {
                                 groupMembersMap.set(docSnap.id, {
-                                    id: docSnap.id,
-                                    name: data.name || 'Dispositivo ' + docSnap.id.substring(0, 4),
-                                    lat: data.lat,
-                                    lng: data.lng,
-                                    battery: data.battery || 85,
-                                    updated: data.updated || Date.now(),
-                                    sos: !!data.sos,
+                                    id: docSnap.id, name: data.name || 'Dispositivo ' + docSnap.id.substring(0, 4), lat: data.lat, lng: data.lng,
+                                    battery: data.battery || 85, updated: data.updated || Date.now(), sos: !!data.sos,
                                     color: '#' + Math.floor(Math.abs(Math.sin(docSnap.id.charCodeAt(0)) * 16777215)).toString(16).padStart(6, '0')
                                 });
                             }
                         });
                         syncRosterAndMap();
-                    }, (err) => console.warn("Firestore snapshot info:", err));
+                    });
                 } catch(e){}
             }
         }
 
         function syncRosterAndMap() {
-            // Self-Filtering Logic: Members do NOT see themselves. Leaders see everyone.
-            groupMembers = Array.from(groupMembersMap.values()).filter(m => {
-                if (isRoomClaimedByMe) return true; 
-                return m.id !== myDeviceId; 
-            });
-
+            // Filter self out of the map marker logic and list if not a leader
+            groupMembers = Array.from(groupMembersMap.values()).filter(m => isRoomClaimedByMe || m.id !== myDeviceId);
+            
             renderRoster();
             updateMapMarkers();
             checkGeofenceAlerts();
@@ -1290,14 +1418,8 @@
             if (sosMembers.length > 0) {
                 sosBanner.classList.remove('hidden');
                 const memberNames = sosMembers.map(m => m.name).join(', ');
-                
-                document.getElementById('sosBannerTitle').innerHTML = `
-                    <i class="fa-solid fa-bell text-rose-900 animate-pulse"></i> 
-                    ¡ALERTA SOS DE URGENCIA: ${memberNames.toUpperCase()}!
-                `;
-                document.getElementById('sosBannerDetail').innerText = `
-                    📍 ${memberNames} ha pulsado el botón de ayuda y solicita auxilio inmediato. Su posición parpadea en naranja en el mapa.
-                `;
+                document.getElementById('sosBannerTitle').innerHTML = `<i class="fa-solid fa-bell text-rose-900 animate-pulse"></i> ¡ALERTA SOS DE URGENCIA: ${memberNames.toUpperCase()}!`;
+                document.getElementById('sosBannerDetail').innerText = `📍 ${memberNames} ha pulsado el botón de ayuda y solicita auxilio inmediato. Su posición parpadea en naranja en el mapa.`;
                 playSosSound();
             } else {
                 sosBanner.classList.add('hidden');
@@ -1305,105 +1427,27 @@
             }
         }
 
-        window.toggleCompassOrientation = async function() {
-            isCompassMapOriented = !isCompassMapOriented;
-            const btnIcon = document.getElementById('compassIcon');
-
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try {
-                    const permission = await DeviceOrientationEvent.requestPermission();
-                    if (permission === 'granted') {
-                        initOrientationSensor();
-                    }
-                } catch (e) {}
-            } else {
-                initOrientationSensor();
-            }
-
-            if (isCompassMapOriented) {
-                if (btnIcon) btnIcon.className = "fa-solid fa-compass text-emerald-400 text-xs sm:text-sm animate-spin-slow";
-                updateMapOrientation(deviceHeading);
-                showToastNotification("🧭 Modo Brújula Activado: El mapa gira según giras el teléfono.");
-            } else {
-                if (btnIcon) btnIcon.className = "fa-solid fa-compass text-indigo-400 text-xs sm:text-sm";
-                const mapEl = document.getElementById('map');
-                if (mapEl) mapEl.style.transform = 'rotate(0deg)';
-                showToastNotification("📍 Modo Norte Fijo Activado.");
-            }
-        };
-
-        window.toggleMapFullscreen = function() {
-            const mapContainer = document.getElementById('mapContainer');
-            const icon = document.getElementById('fullscreenIcon');
-
-            if (!document.fullscreenElement) {
-                if (mapContainer.requestFullscreen) {
-                    mapContainer.requestFullscreen();
-                } else if (mapContainer.webkitRequestFullscreen) {
-                    mapContainer.webkitRequestFullscreen();
-                }
-                if (icon) icon.className = "fa-solid fa-compress text-indigo-400 text-xs sm:text-sm";
-
-                if (screen.orientation && screen.orientation.lock) {
-                    screen.orientation.lock('landscape').catch(() => {});
-                }
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
-                }
-                if (icon) icon.className = "fa-solid fa-expand text-indigo-400 text-xs sm:text-sm";
-
-                if (screen.orientation && screen.orientation.unlock) {
-                    screen.orientation.unlock();
-                }
-            }
-
-            setTimeout(() => {
-                if (map) {
-                    map.invalidateSize();
-                    map.panTo([parentPosition.lat, parentPosition.lng]);
-                }
-            }, 300);
-        };
-
         function initOrientationSensor() {
             if (window.DeviceOrientationEvent) {
                 window.addEventListener('deviceorientation', (e) => {
                     let heading = null;
-                    if (e.webkitCompassHeading) {
-                        heading = e.webkitCompassHeading;
-                    } else if (e.alpha !== null) {
-                        heading = (360 - e.alpha) % 360;
-                    }
-
-                    if (heading !== null && !isNaN(heading)) {
-                        updateMapOrientation(heading);
-                    }
+                    if (e.webkitCompassHeading) heading = e.webkitCompassHeading;
+                    else if (e.alpha !== null) heading = (360 - e.alpha) % 360;
+                    if (heading !== null && !isNaN(heading)) updateMapOrientation(heading);
                 }, true);
             }
         }
 
         function calculateBearing(lat1, lon1, lat2, lon2) {
-            const φ1 = lat1 * Math.PI / 180;
-            const φ2 = lat2 * Math.PI / 180;
-            const Δλ = (lon2 - lon1) * Math.PI / 180;
-            const y = Math.sin(Δλ) * Math.cos(φ2);
-            const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
-            const θ = Math.atan2(y, x);
-            return (θ * 180 / Math.PI + 360) % 360;
+            const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180, Δλ = (lon2 - lon1) * Math.PI / 180;
+            const y = Math.sin(Δλ) * Math.cos(φ2), x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+            return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
         }
 
         function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3;
-            const φ1 = lat1 * Math.PI / 180;
-            const φ2 = lat2 * Math.PI / 180;
-            const Δφ = (lat2 - lat1) * Math.PI / 180;
-            const Δλ = (lon2 - lon1) * Math.PI / 180;
+            const R = 6371e3, φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180, Δφ = (lat2 - lat1) * Math.PI / 180, Δλ = (lon2 - lon1) * Math.PI / 180;
             const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         }
 
         function startARLoop() {
@@ -1411,54 +1455,49 @@
                 const container = document.getElementById('arBadgesContainer');
                 const dotsContainer = document.getElementById('radarMemberDots');
                 const indicator = document.getElementById('radarCompassIndicator');
-
                 if (!container) return;
-                container.innerHTML = '';
-                if (dotsContainer) dotsContainer.innerHTML = '';
+                
+                container.innerHTML = ''; if (dotsContainer) dotsContainer.innerHTML = '';
                 if (indicator) indicator.style.left = `${(deviceHeading / 360) * 100}%`;
 
                 if (groupMembers.length === 0) {
+                    const t = window.translations[window.currentLang] || window.translations['ca'];
                     container.innerHTML = `
                         <div class="absolute inset-0 flex items-center justify-center p-6 text-center">
                             <div class="bg-slate-950/80 backdrop-blur border border-slate-800 p-5 rounded-2xl max-w-xs shadow-2xl">
                                 <i class="fa-solid fa-mobile-screen text-indigo-400 text-3xl mb-2"></i>
-                                <p class="text-xs text-slate-200 font-bold mb-1">No hay móviles vinculados en este momento</p>
-                                <p class="text-[11px] text-slate-400">Escanea el código QR desde otro teléfono para ver la posición superpuesta en la cámara.</p>
+                                <p class="text-xs text-slate-200 font-bold mb-1">No hi ha dispositius vinculats</p>
+                                <p class="text-[11px] text-slate-400">${t.scan_qr_msg}</p>
                             </div>
                         </div>
                     `;
                 } else {
                     const FOV = 60;
                     groupMembers.forEach(m => {
+                        if (m.id === myDeviceId) return; // Prevent self HUD
+
                         const dist = Math.round(calculateDistance(parentPosition.lat, parentPosition.lng, m.lat, m.lng));
                         const bearing = calculateBearing(parentPosition.lat, parentPosition.lng, m.lat, m.lng);
                         const isOutside = dist > safeRadiusMeters;
                         let diffAngle = (bearing - deviceHeading + 540) % 360 - 180;
 
                         if (dotsContainer) {
-                            const dotLeftPct = (bearing / 360) * 100;
                             const dot = document.createElement('div');
                             dot.className = `absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-slate-950 shadow-lg ${m.sos ? 'bg-amber-400 animate-ping' : (isOutside ? 'bg-rose-500' : 'bg-emerald-400')}`;
-                            dot.style.left = `${dotLeftPct}%`;
-                            dot.title = `${m.name}: ${dist}m`;
+                            dot.style.left = `${(bearing / 360) * 100}%`; dot.title = `${m.name}: ${dist}m`;
                             dotsContainer.appendChild(dot);
                         }
 
                         const inFOV = Math.abs(diffAngle) <= FOV / 2;
-                        let screenX = 50 + (diffAngle / (FOV / 2)) * 50;
-                        screenX = Math.max(8, Math.min(92, screenX));
-
-                        const clampedDist = Math.min(200, Math.max(5, dist));
-                        const screenY = 25 + (1 - (clampedDist / 200)) * 45; 
+                        let screenX = Math.max(8, Math.min(92, 50 + (diffAngle / (FOV / 2)) * 50));
+                        const screenY = 25 + (1 - (Math.min(200, Math.max(5, dist)) / 200)) * 45; 
 
                         const badge = document.createElement('div');
                         badge.className = "absolute -translate-x-1/2 -translate-y-1/2 ar-badge pointer-events-auto cursor-pointer";
-                        badge.style.left = `${screenX}%`;
-                        badge.style.top = `${screenY}%`;
+                        badge.style.left = `${screenX}%`; badge.style.top = `${screenY}%`;
 
                         const borderBg = m.sos ? 'bg-amber-500 border-amber-300 text-slate-950 shadow-amber-500/50' : (isOutside ? 'bg-rose-950/90 border-rose-500 text-white shadow-rose-600/50' : 'bg-slate-950/90 border-emerald-400 text-white shadow-emerald-500/30');
-
-                        const arrowIndicator = !inFOV ? (diffAngle < 0 ? `<span class="bg-indigo-600 text-white px-2 py-1 rounded-l-xl font-bold text-[10px] flex items-center"><i class="fa-solid fa-arrow-left mr-1"></i> GIRAR IZQ</span>` : `<span class="bg-indigo-600 text-white px-2 py-1 rounded-r-xl font-bold text-[10px] flex items-center">GIRAR DER <i class="fa-solid fa-arrow-right ml-1"></i></span>`) : '';
+                        const arrowIndicator = !inFOV ? (diffAngle < 0 ? `<span class="bg-indigo-600 text-white px-2 py-1 rounded-l-xl font-bold text-[10px]"><i class="fa-solid fa-arrow-left"></i></span>` : `<span class="bg-indigo-600 text-white px-2 py-1 rounded-r-xl font-bold text-[10px]"><i class="fa-solid fa-arrow-right"></i></span>`) : '';
 
                         badge.innerHTML = `
                             <div class="flex items-center gap-1.5 ${borderBg} backdrop-blur border-2 px-3 py-2 rounded-2xl shadow-2xl transition hover:scale-110">
@@ -1468,10 +1507,9 @@
                                 </div>
                                 <div class="text-left leading-tight">
                                     <p class="font-extrabold text-xs flex items-center gap-1"><span>${m.name}</span>${m.sos ? '<span class="bg-amber-400 text-slate-950 text-[9px] px-1 rounded font-black">SOS</span>' : ''}</p>
-                                    <p class="text-[11px] font-mono font-bold ${isOutside ? 'text-rose-300' : 'text-emerald-300'}">📍 ${dist}m ${isOutside ? '⚠️ ¡FUERA!' : '✓'}</p>
+                                    <p class="text-[11px] font-mono font-bold ${isOutside ? 'text-rose-300' : 'text-emerald-300'}">📍 ${dist}m ${isOutside ? '⚠️' : '✓'}</p>
                                 </div>
-                            </div>
-                        `;
+                            </div>`;
                         container.appendChild(badge);
                     });
                 }
@@ -1480,94 +1518,67 @@
             arAnimationFrame = requestAnimationFrame(updateAROverlay);
         }
 
-        function playSirenSound() {
+        // --- SOUND ENGINE ---
+        function playPerimeterSound() {
             if (!isAudioAlarmEnabled) return;
             try {
                 if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 if (audioContext.state === 'suspended') audioContext.resume();
-                if (alarmOscillator) return;
+                if (perimeterOscillator) return;
 
-                alarmOscillator = audioContext.createOscillator();
+                perimeterOscillator = audioContext.createOscillator();
                 const gainNode = audioContext.createGain();
-                alarmOscillator.type = 'sawtooth';
-                alarmOscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+                perimeterOscillator.type = 'sawtooth';
+                perimeterOscillator.frequency.setValueAtTime(600, audioContext.currentTime);
 
                 let high = true;
-                const interval = setInterval(() => {
-                    if (!alarmOscillator) { clearInterval(interval); return; }
-                    alarmOscillator.frequency.setValueAtTime(high ? 600 : 1100, audioContext.currentTime);
+                perimeterInterval = setInterval(() => {
+                    if (!perimeterOscillator) { clearInterval(perimeterInterval); return; }
+                    perimeterOscillator.frequency.setValueAtTime(high ? 600 : 1100, audioContext.currentTime);
                     high = !high;
                 }, 300);
 
                 gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-                alarmOscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                alarmOscillator.start();
+                perimeterOscillator.connect(gainNode); gainNode.connect(audioContext.destination);
+                perimeterOscillator.start();
             } catch(e){}
         }
 
-        function stopSirenSound() {
-            if (alarmOscillator) {
-                try {
-                    alarmOscillator.stop();
-                    alarmOscillator.disconnect();
-                } catch(e){}
-                alarmOscillator = null;
-            }
+        function stopPerimeterSound() {
+            if (perimeterOscillator) { try { perimeterOscillator.stop(); perimeterOscillator.disconnect(); } catch(e){} perimeterOscillator = null; }
+            if (perimeterInterval) clearInterval(perimeterInterval);
         }
 
         function playSosSound() {
             if (!isAudioAlarmEnabled) return;
             try {
-                if (!audioContext) {
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                if (audioContext.state === 'suspended') {
-                    audioContext.resume();
-                }
-
-                if (sosOscillator) return; // Evitar múltiples reproducciones
+                if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioContext.state === 'suspended') audioContext.resume();
+                if (sosOscillator) return;
 
                 sosOscillator = audioContext.createOscillator();
                 const gainNode = audioContext.createGain();
-
-                // Onda cuadrada para un sonido más "digital" y de emergencia rápida
                 sosOscillator.type = 'square';
                 sosOscillator.frequency.setValueAtTime(800, audioContext.currentTime);
 
                 let high = true;
                 sosInterval = setInterval(() => {
-                    if (!sosOscillator) {
-                        clearInterval(sosInterval);
-                        return;
-                    }
-                    // Alternancia de frecuencia mucho más rápida (150ms)
+                    if (!sosOscillator) { clearInterval(sosInterval); return; }
                     sosOscillator.frequency.setValueAtTime(high ? 800 : 1200, audioContext.currentTime);
                     high = !high;
                 }, 150);
 
-                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-
-                sosOscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-
+                gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+                sosOscillator.connect(gainNode); gainNode.connect(audioContext.destination);
                 sosOscillator.start();
             } catch(e){}
         }
 
         function stopSosSound() {
-            if (sosOscillator) {
-                try {
-                    sosOscillator.stop();
-                    sosOscillator.disconnect();
-                } catch(e){}
-                sosOscillator = null;
-            }
-            if (sosInterval) {
-                clearInterval(sosInterval);
-                sosInterval = null;
-            }
+            if (sosOscillator) { try { sosOscillator.stop(); sosOscillator.disconnect(); } catch(e){} sosOscillator = null; }
+            if (sosInterval) clearInterval(sosInterval);
         }
+        // ------------------
 
         function checkGeofenceAlerts() {
             let breachedMembers = [];
@@ -1579,87 +1590,71 @@
             const alertBanner = document.getElementById('perimeterAlertBanner');
             const insideCountBadge = document.getElementById('insideCountBadge');
             const statusCircle = document.getElementById('statusCircle');
+            const t = window.translations[window.currentLang] || window.translations['ca'];
 
-            insideCountBadge.innerText = `${groupMembers.length} Móviles Conectados`;
+            if (insideCountBadge) insideCountBadge.innerHTML = `${groupMembers.length} <span data-i18n="devices_connected">${t.devices_connected}</span>`;
 
             if (breachedMembers.length > 0) {
                 alertBanner.classList.remove('hidden');
                 statusCircle.className = "w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping";
                 const namesStr = breachedMembers.map(b => `${b.member.name} (${b.dist}m)`).join(', ');
-                document.getElementById('alertBannerTitle').innerText = `¡ALERTA DE PERÍMETRO (${breachedMembers.length})!`;
-                document.getElementById('alertBannerDetail').innerText = `Fuera de rango: ${namesStr}. Límite configurado: ${safeRadiusMeters}m.`;
+                document.getElementById('alertBannerDetail').innerText = `Fora de rang: ${namesStr}. Límit: ${safeRadiusMeters}m.`;
                 if (radiusCircle) radiusCircle.setStyle({ color: '#ef4444', fillColor: '#f87171' });
-                playSirenSound();
+                playPerimeterSound();
             } else {
                 alertBanner.classList.add('hidden');
                 statusCircle.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
                 if (radiusCircle) radiusCircle.setStyle({ color: '#6366f1', fillColor: '#818cf8' });
-                stopSirenSound();
+                stopPerimeterSound();
             }
         }
 
         function createOrUpdateMemberMarker(member) {
+            if (member.id === myDeviceId && !isRoomClaimedByMe) return; // Self filtering on map
+
             const isSos = !!member.sos;
             const dist = calculateDistance(parentPosition.lat, parentPosition.lng, member.lat, member.lng);
             const isOutside = dist > safeRadiusMeters;
 
             const pulseClass = isSos ? 'sos-blinking-orange pulse-marker-sos' : (isOutside ? 'pulse-marker-danger' : '');
             const bgClass = isSos ? 'sos-blinking-orange bg-orange-500' : (isOutside ? 'bg-rose-600' : 'bg-slate-900');
-            const size = isSos ? 44 : 36;
-            const anchor = isSos ? 22 : 18;
+            const size = isSos ? 44 : 36, anchor = isSos ? 22 : 18;
 
             const iconInnerHtml = isSos ? `<div class="flex flex-col items-center justify-center leading-none"><i class="fa-solid fa-triangle-exclamation text-slate-950 text-xs animate-bounce"></i><span class="text-slate-950 font-black text-[10px] tracking-tighter">SOS</span></div>` : (member.name ? member.name.charAt(0).toUpperCase() : '?');
-
             const nameTagHtml = isSos ? `<div class="absolute -bottom-7 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 text-[11px] font-black px-2.5 py-1 rounded-lg border-2 border-amber-200 whitespace-nowrap shadow-2xl flex items-center gap-1.5 z-30 animate-pulse"><i class="fa-solid fa-triangle-exclamation text-slate-950 text-xs"></i><span>${member.name}</span><span class="bg-slate-950 text-amber-300 font-black px-1 rounded text-[10px] tracking-wider border border-amber-400">¡SOS!</span><span class="text-slate-950 text-[10px]">(${Math.round(dist)}m)</span></div>` : `<div class="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-slate-950/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-md border border-slate-700 whitespace-nowrap shadow-lg">${member.name.split(' ')[0]} (${Math.round(dist)}m)</div>`;
-
             const iconHtml = `<div class="relative group"><div class="${isSos ? 'w-11 h-11' : 'w-9 h-9'} rounded-full ${bgClass} ${pulseClass} border-2 flex items-center justify-center text-white text-xs font-black shadow-2xl" style="border-color: ${isSos ? '#fef08a' : member.color}">${iconInnerHtml}</div>${nameTagHtml}</div>`;
 
             const customIcon = L.divIcon({ className: 'custom-member-icon', html: iconHtml, iconSize: [size, size], iconAnchor: [anchor, anchor] });
             const elapsedSecs = Math.max(0, Math.floor((Date.now() - member.updated) / 1000));
-            const timeAgoStr = elapsedSecs < 10 ? 'Ahora mismo' : `Hace ${elapsedSecs}s`;
+            const timeAgoStr = elapsedSecs < 10 ? 'Ara' : `${elapsedSecs}s`;
 
             if (memberMarkers[member.id]) {
-                memberMarkers[member.id].setLatLng([member.lat, member.lng]);
-                memberMarkers[member.id].setIcon(customIcon);
+                memberMarkers[member.id].setLatLng([member.lat, member.lng]); memberMarkers[member.id].setIcon(customIcon);
             } else {
                 const marker = L.marker([member.lat, member.lng], { icon: customIcon }).addTo(map);
-                marker.bindPopup(`
-                    <div class="p-1 font-sans">
-                        <strong style="color:${member.color}">${member.name}</strong> ${isSos ? '<span class="bg-orange-500 text-slate-950 px-1.5 py-0.5 rounded font-black text-xs border border-amber-300">¡ALERTA SOS ACTIVA!</span>' : ''}<br>
-                        Distancia: <b>${Math.round(dist)} m</b><br>
-                        Batería: <b>${member.battery}%</b><br>
-                        Transmisión: <b>${timeAgoStr}</b>
-                        ${isSos ? `<br><button onclick="window.clearSosSignal('${member.id}')" class="mt-2.5 w-full bg-slate-950 hover:bg-slate-900 text-amber-300 font-extrabold text-xs py-1.5 rounded-xl border border-amber-400 shadow-md flex items-center justify-center gap-1"><i class="fa-solid fa-bell-slash"></i> Desactivar SOS de ${member.name.split(' ')[0]}</button>` : ''}
-                    </div>
-                `);
+                marker.bindPopup(`<div class="p-1 font-sans"><strong style="color:${member.color}">${member.name}</strong> ${isSos ? '<span class="bg-orange-500 text-slate-950 px-1.5 py-0.5 rounded font-black text-xs border border-amber-300">SOS!</span>' : ''}<br>Distancia: <b>${Math.round(dist)} m</b><br>Batería: <b>${member.battery}%</b><br>Transmisión: <b>${timeAgoStr}</b>${isSos ? `<br><button onclick="window.clearSosSignal('${member.id}')" class="mt-2.5 w-full bg-slate-950 text-amber-300 font-extrabold text-xs py-1.5 rounded-xl border border-amber-400">Desactivar SOS</button>` : ''}</div>`);
                 memberMarkers[member.id] = marker;
             }
         }
 
-        function updateMapMarkers() {
-            // Remove old markers not in groupMembers
-            const validIds = new Set(groupMembers.map(m => m.id));
-            for (let id in memberMarkers) {
-                if (!validIds.has(id)) { map.removeLayer(memberMarkers[id]); delete memberMarkers[id]; }
-            }
-            groupMembers.forEach(m => createOrUpdateMemberMarker(m));
-        }
+        function updateMapMarkers() { groupMembers.forEach(m => createOrUpdateMemberMarker(m)); }
 
         function renderRoster() {
             const container = document.getElementById('membersContainer');
             const countText = document.getElementById('membersCountText');
             if (countText) countText.innerText = groupMembers.length;
+            const t = window.translations[window.currentLang] || window.translations['ca'];
+
             container.innerHTML = '';
 
             if (groupMembers.length === 0) {
                 container.innerHTML = `
                     <div class="p-6 text-center border border-dashed border-slate-800 rounded-2xl bg-slate-900/50">
                         <div class="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-500 mx-auto mb-3"><i class="fa-solid fa-mobile-screen-button text-2xl"></i></div>
-                        <p class="text-xs text-slate-300 font-bold mb-1">Esperando señal en sala ${activeGroupId || '...'}</p>
-                        <p class="text-[11px] text-slate-500 mb-4 leading-relaxed">Abre la cámara del otro teléfono y escanea el QR para vincularlo.</p>
-                        <button onclick="window.openScanToLocateModal()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-bold transition shadow-lg shadow-indigo-600/30"><i class="fa-solid fa-qrcode mr-1"></i> Ver Código QR</button>
-                    </div>
-                `;
+                        <p class="text-xs text-slate-300 font-bold mb-1">${t.waiting_signal} ${activeGroupId || '...'}</p>
+                        <p class="text-[11px] text-slate-500 mb-4 leading-relaxed">${t.scan_qr_msg}</p>
+                        <button onclick="window.openScanToLocateModal()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-bold transition shadow-lg shadow-indigo-600/30"><i class="fa-solid fa-qrcode mr-1"></i> ${t.view_qr}</button>
+                    </div>`;
                 return;
             }
 
@@ -1682,79 +1677,62 @@
                                 <h3 class="font-bold text-sm text-slate-100 flex items-center gap-1.5">${m.name}${m.sos ? '<span class="text-[10px] bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded font-black">SOS</span>' : ''}</h3>
                                 <div class="flex items-center gap-3 text-xs text-slate-400 mt-0.5">
                                     <span><i class="fa-solid fa-battery-${m.battery > 70 ? 'full text-emerald-400' : m.battery > 30 ? 'half text-amber-400' : 'empty text-rose-400'} mr-1"></i>${m.battery}%</span>
-                                    <span><i class="fa-solid fa-satellite text-indigo-400 mr-1"></i>En Vivo</span>
+                                    <span><i class="fa-solid fa-satellite text-indigo-400 mr-1"></i>${t.live}</span>
                                 </div>
                             </div>
                         </div>
                         <div class="text-right flex items-center gap-2">
                             <div>
                                 <div class="text-sm font-black ${isOutside ? 'text-rose-400 animate-pulse' : 'text-emerald-400'}">${dist} m</div>
-                                <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${isOutside ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-emerald-500/20 text-emerald-300'}">${isOutside ? '¡FUERA!' : 'Segura'}</span>
                             </div>
-                            <button onclick="window.removeMember('${m.id}', '${m.name.replace(/'/g, "\\'")}')" title="Desvincular miembro" class="ml-1 p-2 rounded-xl bg-slate-800 hover:bg-rose-600/30 text-slate-400 hover:text-rose-400 border border-slate-700 hover:border-rose-500/40 transition"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                            ${isRoomClaimedByMe ? `<button onclick="window.removeMember('${m.id}', '${m.name.replace(/'/g, "\\'")}')" class="ml-1 p-2 rounded-xl bg-slate-800 hover:bg-rose-600/30 text-slate-400 hover:text-rose-400 border border-slate-700"><i class="fa-solid fa-trash-can text-xs"></i></button>` : ''}
                         </div>
                     </div>
                     <div class="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-                        <span class="text-[11px]"><i class="fa-solid fa-clock text-emerald-400 mr-1"></i>${elapsedSecs < 10 ? 'Sincronizado' : `Hace ${elapsedSecs}s`}</span>
+                        <span class="text-[11px]"><i class="fa-solid fa-clock text-emerald-400 mr-1"></i>${elapsedSecs < 10 ? 'Ara' : `${elapsedSecs}s`}</span>
                         <div class="flex items-center gap-1.5">
-                            <button onclick="window.centerOnMember('${m.id}')" class="px-2.5 py-1 rounded-lg bg-indigo-950 hover:bg-indigo-900 border border-indigo-800/50 text-indigo-300 text-[11px] font-semibold transition"><i class="fa-solid fa-location-dot mr-1"></i>Ver en Mapa</button>
-                            <button onclick="window.openARView()" class="px-2.5 py-1 rounded-lg bg-emerald-950 hover:bg-emerald-900 border border-emerald-800/50 text-emerald-300 text-[11px] font-semibold transition"><i class="fa-solid fa-camera mr-1"></i>Cámara RA</button>
+                            <button onclick="window.centerOnMember('${m.id}')" class="px-2.5 py-1 rounded-lg bg-indigo-950 border border-indigo-800/50 text-indigo-300 text-[11px] font-semibold"><i class="fa-solid fa-location-dot mr-1"></i>Mapa</button>
+                            <button onclick="window.openARView()" class="px-2.5 py-1 rounded-lg bg-emerald-950 border border-emerald-800/50 text-emerald-300 text-[11px] font-semibold"><i class="fa-solid fa-camera mr-1"></i>RA</button>
                         </div>
-                    </div>
-                `;
+                    </div>`;
                 container.appendChild(card);
             });
         }
 
+        function startSilentAudioKeepAlive() { try { const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); gain.gain.value = 0.001; osc.connect(gain); gain.connect(ctx.destination); osc.start(); } catch(e) {} }
+        async function enableWakeLock() { if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} } }
+        async function pushLocationToServer(lat, lng) {
+            if(lat && lng) currentPosCache = { lat, lng };
+            if (mqttClient && mqttClient.connected && activeGroupId && (isRoomClaimedByMe || isJoinedAsMember)) {
+                mqttClient.publish(`concertsafeguard/v2/room_${activeGroupId}`, JSON.stringify({ id: myDeviceId, name: myRegisteredName, lat: currentPosCache.lat, lng: currentPosCache.lng, battery: 92, updated: Date.now(), sos: isSosActive, color: '#6366f1' }), { qos: 0 });
+            }
+            if (db && currentUser && activeGroupId && (isRoomClaimedByMe || isJoinedAsMember)) {
+                try { setDoc(doc(db, 'artifacts', appId, 'public', 'data', `positions_${activeGroupId}`, myDeviceId), { name: myRegisteredName, lat: currentPosCache.lat, lng: currentPosCache.lng, battery: 92, updated: Date.now(), sos: isSosActive }, { merge: true }).catch(() => {}); } catch (e) {}
+            }
+            gpsSyncCounter++;
+            const syncCountLabel = document.getElementById('mobileSyncCount'), lastSyncLabel = document.getElementById('mobileLastSyncTime'), dot = document.getElementById('syncPulseDot');
+            if (dot) dot.className = "fa-solid fa-signal text-emerald-400 mr-1 animate-pulse";
+            if (syncCountLabel) syncCountLabel.innerText = `${gpsSyncCounter} enviaments OK`;
+            if (lastSyncLabel) lastSyncLabel.innerText = `Enviant a ${activeGroupId} (${new Date().toLocaleTimeString()})`;
+        }
         function alertModal(msg) {
-            const modal = document.createElement('div');
-            modal.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4";
-            modal.innerHTML = `
-                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl max-w-sm w-full text-center shadow-2xl">
-                    <div class="text-indigo-400 text-3xl mb-3"><i class="fa-solid fa-circle-info"></i></div>
-                    <p class="text-sm text-slate-200 mb-5 font-medium leading-relaxed">${msg}</p>
-                    <button onclick="this.closest('.fixed').remove()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-indigo-600/30">Entendido</button>
-                </div>
-            `;
+            const modal = document.createElement('div'); modal.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4";
+            modal.innerHTML = `<div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl max-w-sm w-full text-center shadow-2xl"><div class="text-indigo-400 text-3xl mb-3"><i class="fa-solid fa-circle-info"></i></div><p class="text-sm text-slate-200 mb-5 font-medium leading-relaxed">${msg}</p><button onclick="this.closest('.fixed').remove()" class="w-full py-2.5 bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-lg">Entendido</button></div>`;
             document.body.appendChild(modal);
         }
-
-        function startSilentAudioKeepAlive() {
-            try { const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); gain.gain.value = 0.001; osc.connect(gain); gain.connect(ctx.destination); osc.start(); } catch(e) {}
-        }
-
-        async function enableWakeLock() { if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} } }
-
         function showToastNotification(message) {
-            const toast = document.createElement('div');
-            toast.className = "fixed bottom-5 right-5 z-[200] bg-indigo-600 text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2 border border-indigo-400 animate-bounce";
-            toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-300"></i> ${message}`;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
+            const toast = document.createElement('div'); toast.className = "fixed bottom-5 right-5 z-[200] bg-indigo-600 text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2 border border-indigo-400 animate-bounce";
+            toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-300"></i> ${message}`; document.body.appendChild(toast); setTimeout(() => toast.remove(), 4000);
         }
-
-        // --- FIREBASE AND BOOTSTRAPPING ---
-        const authReadyPromise = new Promise(async (resolve) => {
-            try {
-                const app = initializeApp({ apiKey: "demo", authDomain: "demo.firebaseapp.com", projectId: "demo" });
-                db = getFirestore(app);
-                auth = getAuth(app);
-                const res = await signInAnonymously(auth);
-                currentUser = res.user;
-                resolve(currentUser);
-            } catch(e) {
-                console.warn("Firebase falló, operando con MQTT local", e);
-                resolve(null);
-            }
-        });
 
         window.addEventListener('load', async () => {
+            window.setLanguage(window.currentLang); // Init i18n
             updateHostUI();
             initLeafletMap();
             window.startHostGpsTracking();
             initOrientationSensor();
             
-            await authReadyPromise;
+            await initFirebase();
 
             if (urlParams.get('joinGroup')) {
                 initMqttSync();
@@ -1769,11 +1747,7 @@
                 window.openHostRoomModal();
             }
 
-            setInterval(() => {
-                if (myRegisteredName && currentPosCache && (isRoomClaimedByMe || isJoinedAsMember)) {
-                    pushLocationToServer(currentPosCache.lat, currentPosCache.lng, isSosActive);
-                }
-            }, 3000);
+            setInterval(() => { if (myRegisteredName && currentPosCache) pushLocationToServer(currentPosCache.lat, currentPosCache.lng); }, 3000);
         });
     </script>
 </body>
