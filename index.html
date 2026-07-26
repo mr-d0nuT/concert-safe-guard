@@ -774,10 +774,11 @@
 
                 mqttClient.on('connect', () => {
                     updateCloudBadge(true, "Nube Conectada");
-                    const topic = `concertsafeguard/v2/room_${activeGroupId}`;
-                    mqttClient.subscribe(topic, { qos: 0 });
-
-                    broadcastPing();
+                    if (activeGroupId) {
+                        const topic = `concertsafeguard/v2/room_${activeGroupId}`;
+                        mqttClient.subscribe(topic, { qos: 0 });
+                        broadcastPing();
+                    }
 
                     if (myRegisteredName && currentPosCache) {
                         broadcastLocationViaMqtt(currentPosCache.lat, currentPosCache.lng);
@@ -788,6 +789,21 @@
                     try {
                         const payload = JSON.parse(message.toString());
                         if (!payload) return;
+
+                        // Answer claim query if another host attempts to claim our active room
+                        if (payload.type === 'claim_query' && payload.senderDeviceId !== myDeviceId) {
+                            if (isRoomClaimedByMe && activeGroupId) {
+                                const responseTopic = `concertsafeguard/v2/room_${activeGroupId}`;
+                                mqttClient.publish(responseTopic, JSON.stringify({
+                                    type: 'claim_response',
+                                    hostDeviceId: myDeviceId,
+                                    hostName: myRegisteredName || 'Líder GPS',
+                                    pin: activeRoomPin,
+                                    active: true
+                                }), { qos: 0 });
+                            }
+                            return;
+                        }
 
                         if (payload.type === 'kick') {
                             if (payload.targetId) {
@@ -883,14 +899,14 @@
         }
 
         function broadcastPing() {
-            if (mqttClient && mqttClient.connected) {
+            if (mqttClient && mqttClient.connected && activeGroupId) {
                 const topic = `concertsafeguard/v2/room_${activeGroupId}`;
                 mqttClient.publish(topic, JSON.stringify({ type: 'ping', id: myDeviceId }), { qos: 0 });
             }
         }
 
         function broadcastLocationViaMqtt(lat, lng, isSos = false) {
-            if (mqttClient && mqttClient.connected) {
+            if (mqttClient && mqttClient.connected && activeGroupId) {
                 const topic = `concertsafeguard/v2/room_${activeGroupId}`;
                 const payload = {
                     id: myDeviceId,
@@ -904,6 +920,156 @@
                 };
                 mqttClient.publish(topic, JSON.stringify(payload), { qos: 0 });
             }
+        }
+
+        async function attemptRoomClaim(requestedRoom, requestedPin, silentMode = false) {
+            const cleanRoom = requestedRoom.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+            if (!cleanRoom || cleanRoom.length < 3) {
+                return { success: false, reasonMsg: "El nombre de la sala debe tener al menos 3 caracteres alfanuméricos." };
+            }
+
+            // 1. Check active presence via MQTT WebSockets
+            const mqttCheckPromise = new Promise((resolve) => {
+                let isOccupied = false;
+                let rivalHostName = '';
+                let rivalPin = '';
+
+                if (!mqttClient || !mqttClient.connected) {
+                    initMqttSync();
+                }
+
+                const tempTopic = `concertsafeguard/v2/room_${cleanRoom}`;
+                
+                const tempMessageHandler = (topic, message) => {
+                    if (topic === tempTopic) {
+                        try {
+                            const payload = JSON.parse(message.toString());
+                            if (payload && payload.type === 'claim_response' && payload.hostDeviceId && payload.hostDeviceId !== myDeviceId) {
+                                isOccupied = true;
+                                rivalHostName = payload.hostName || 'Otro Líder';
+                                rivalPin = payload.pin || '';
+                            }
+                        } catch(e) {}
+                    }
+                };
+
+                if (mqttClient) {
+                    mqttClient.on('message', tempMessageHandler);
+                    mqttClient.subscribe(tempTopic, { qos: 0 });
+                    mqttClient.publish(tempTopic, JSON.stringify({
+                        type: 'claim_query',
+                        senderDeviceId: myDeviceId
+                    }), { qos: 0 });
+                }
+
+                setTimeout(() => {
+                    if (mqttClient) {
+                        mqttClient.off('message', tempMessageHandler);
+                    }
+                    if (isOccupied) {
+                        if (rivalPin && requestedPin && rivalPin === requestedPin) {
+                            resolve({ ok: true });
+                        } else {
+                            resolve({
+                                ok: false,
+                                msg: `La sala '${cleanRoom}' ya está activa y siendo utilizada por otro líder (${rivalHostName}). Por favor elige un nombre de sala único.`
+                            });
+                        }
+                    } else {
+                        resolve({ ok: true });
+                    }
+                }, 1200);
+            });
+
+            const mqttResult = await mqttCheckPromise;
+            if (!mqttResult.ok) {
+                return { success: false, reasonMsg: mqttResult.msg };
+            }
+
+            // 2. Firestore Cloud Check
+            await authReadyPromise;
+
+            if (db && currentUser) {
+                try {
+                    const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'room_claims', cleanRoom);
+                    const docSnap = await getDoc(roomDocRef);
+
+                    const now = Date.now();
+                    const activeThreshold = 10 * 60 * 1000;
+
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        const isOtherHost = data.hostDeviceId && data.hostDeviceId !== myDeviceId;
+                        const isStillActive = (now - (data.lastActive || 0)) < activeThreshold;
+
+                        if (isOtherHost && isStillActive) {
+                            const hasCorrectPin = data.pin && requestedPin && data.pin === requestedPin;
+                            if (!hasCorrectPin) {
+                                return {
+                                    success: false,
+                                    reasonMsg: `La sala '${cleanRoom}' ya está activa y siendo utilizada por otro líder (${data.hostName || 'Usuario'}). Por favor elige un nombre de sala diferente.`
+                                };
+                            }
+                        }
+                    }
+
+                    await setDoc(roomDocRef, {
+                        roomId: cleanRoom,
+                        hostDeviceId: myDeviceId,
+                        hostName: myRegisteredName || 'Líder GPS',
+                        createdAt: docSnap.exists() ? (docSnap.data().createdAt || now) : now,
+                        lastActive: now,
+                        pin: requestedPin || ''
+                    }, { merge: true });
+
+                } catch (e) {
+                    console.warn("Firestore claim check warning:", e);
+                }
+            }
+
+            activeGroupId = cleanRoom;
+            activeRoomPin = requestedPin || '';
+            isRoomClaimedByMe = true;
+
+            localStorage.setItem('concert_group_id', activeGroupId);
+            localStorage.setItem('concert_room_pin', activeRoomPin);
+
+            document.getElementById('currentGroupIdDisplay').innerText = activeGroupId;
+            document.getElementById('groupCodeBadgeInline').innerText = activeGroupId;
+            document.getElementById('modalGroupCodeText').innerText = activeGroupId;
+            document.getElementById('modalGroupIdLabel').innerText = activeGroupId;
+
+            startHostPresenceHeartbeat();
+
+            return { success: true };
+        }
+
+        function startHostPresenceHeartbeat() {
+            if (roomHeartbeatInterval) clearInterval(roomHeartbeatInterval);
+            
+            roomHeartbeatInterval = setInterval(async () => {
+                if (isRoomClaimedByMe && activeGroupId) {
+                    if (mqttClient && mqttClient.connected) {
+                        const topic = `concertsafeguard/v2/room_${activeGroupId}`;
+                        mqttClient.publish(topic, JSON.stringify({
+                            type: 'host_presence',
+                            hostDeviceId: myDeviceId,
+                            hostName: myRegisteredName || 'Líder GPS',
+                            pin: activeRoomPin
+                        }), { qos: 0 });
+                    }
+
+                    if (db) {
+                        try {
+                            const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'room_claims', activeGroupId);
+                            setDoc(roomDocRef, {
+                                lastActive: Date.now(),
+                                hostName: myRegisteredName || 'Líder GPS'
+                            }, { merge: true }).catch(() => {});
+                        } catch(e) {}
+                    }
+                }
+            }, 10000);
         }
 
         function syncRosterAndMap() {
@@ -1519,78 +1685,6 @@
             }
         };
 
-        async function attemptRoomClaim(requestedRoom, requestedPin, silentMode = false) {
-            const cleanRoom = requestedRoom.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
-            if (!cleanRoom || cleanRoom.length < 3) {
-                return { success: false, reasonMsg: "El nombre de la sala debe tener al menos 3 caracteres." };
-            }
-
-            await authReadyPromise;
-
-            if (db && currentUser) {
-                try {
-                    const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'room_claims', cleanRoom);
-                    const docSnap = await getDoc(roomDocRef);
-
-                    const now = Date.now();
-                    const activeThreshold = 20 * 60 * 1000;
-
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        const isOtherHost = data.hostDeviceId && data.hostDeviceId !== myDeviceId;
-                        const isStillActive = (now - (data.lastActive || 0)) < activeThreshold;
-
-                        if (isOtherHost && isStillActive) {
-                            return {
-                                success: false,
-                                reasonMsg: `La sala '${cleanRoom}' ya está activa y siendo utilizada por otro líder (${data.hostName || 'Usuario'}). Por favor elige un nombre de sala diferente.`
-                            };
-                        }
-
-                        if (data.pin && data.pin !== requestedPin && isOtherHost) {
-                            return {
-                                success: false,
-                                reasonMsg: `La sala '${cleanRoom}' requiere una clave PIN válida o ya está reservada.`
-                            };
-                        }
-                    }
-
-                    await setDoc(roomDocRef, {
-                        roomId: cleanRoom,
-                        hostDeviceId: myDeviceId,
-                        hostName: myRegisteredName || 'Líder GPS',
-                        createdAt: docSnap.exists() ? (docSnap.data().createdAt || now) : now,
-                        lastActive: now,
-                        pin: requestedPin || ''
-                    }, { merge: true });
-
-                    if (roomHeartbeatInterval) clearInterval(roomHeartbeatInterval);
-                    roomHeartbeatInterval = setInterval(async () => {
-                        if (db && isRoomClaimedByMe) {
-                            setDoc(roomDocRef, { lastActive: Date.now(), hostName: myRegisteredName || 'Líder GPS' }, { merge: true }).catch(() => {});
-                        }
-                    }, 15000);
-
-                } catch (e) {
-                    console.warn("Firestore claim check fallback:", e);
-                }
-            }
-
-            activeGroupId = cleanRoom;
-            activeRoomPin = requestedPin || '';
-            isRoomClaimedByMe = true;
-
-            localStorage.setItem('concert_group_id', activeGroupId);
-            localStorage.setItem('concert_room_pin', activeRoomPin);
-
-            document.getElementById('currentGroupIdDisplay').innerText = activeGroupId;
-            document.getElementById('groupCodeBadgeInline').innerText = activeGroupId;
-            document.getElementById('modalGroupCodeText').innerText = activeGroupId;
-            document.getElementById('modalGroupIdLabel').innerText = activeGroupId;
-
-            return { success: true };
-        }
-
         window.handleHostRoomSubmit = async function(e) {
             e.preventDefault();
             const roomInput = document.getElementById('hostRoomNameInput').value;
@@ -1691,7 +1785,7 @@
         };
 
         window.dismissSosAlert = function() {
-            if (mqttClient && mqttClient.connected) {
+            if (mqttClient && mqttClient.connected && activeGroupId) {
                 const topic = `concertsafeguard/v2/room_${activeGroupId}`;
                 mqttClient.publish(topic, JSON.stringify({ type: 'clear_sos', targetId: 'all', id: myDeviceId }), { qos: 0 });
             }
@@ -1728,12 +1822,12 @@
                 delete memberMarkers[memberId];
             }
 
-            if (mqttClient && mqttClient.connected) {
+            if (mqttClient && mqttClient.connected && activeGroupId) {
                 const topic = `concertsafeguard/v2/room_${activeGroupId}`;
                 mqttClient.publish(topic, JSON.stringify({ type: 'kick', targetId: memberId, id: myDeviceId }), { qos: 0 });
             }
 
-            if (db && currentUser) {
+            if (db && currentUser && activeGroupId) {
                 try {
                     const memberDoc = doc(db, 'artifacts', appId, 'public', 'data', `positions_${activeGroupId}`, memberId);
                     deleteDoc(memberDoc).catch(()=>{});
@@ -1753,7 +1847,7 @@
             localStorage.setItem('concert_my_name', nameInput);
             removedMemberIds.delete(myDeviceId);
 
-            if (mqttClient && mqttClient.connected) {
+            if (mqttClient && mqttClient.connected && activeGroupId) {
                 const topic = `concertsafeguard/v2/room_${activeGroupId}`;
                 mqttClient.publish(topic, JSON.stringify({ type: 'join', id: myDeviceId, name: nameInput }), { qos: 0 });
             }
@@ -1854,7 +1948,7 @@
 
             broadcastLocationViaMqtt(lat, lng, isSos);
 
-            if (db && currentUser) {
+            if (db && currentUser && activeGroupId) {
                 try {
                     const deviceDoc = doc(db, 'artifacts', appId, 'public', 'data', `positions_${activeGroupId}`, myDeviceId);
                     setDoc(deviceDoc, {
@@ -1912,19 +2006,10 @@
                     document.getElementById('mobileBannerName').innerText = myRegisteredName;
                 }
             } else {
-                if (activeGroupId) {
-                    const claimResult = await attemptRoomClaim(activeGroupId, activeRoomPin, true);
-                    if (!claimResult.success) {
-                        openHostRoomModal(claimResult.reasonMsg);
-                    } else {
-                        initMqttSync();
-                    }
-                } else {
-                    openHostRoomModal();
-                }
+                openHostRoomModal();
             }
 
-            if (db) {
+            if (db && activeGroupId) {
                 try {
                     const positionsCol = collection(db, 'artifacts', appId, 'public', 'data', `positions_${activeGroupId}`);
                     onSnapshot(positionsCol, (snapshot) => {
