@@ -304,7 +304,23 @@
             <p class="text-[11px] text-slate-400 text-center mb-4">El mensaje aparecerá en la pantalla de todos los miembros al instante.</p>
             
             <form onsubmit="window.sendChatMessage(event)">
-                <textarea id="chatMessageInput" required rows="3" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-sky-500 resize-none font-medium mb-4" placeholder="Escribe tu mensaje aquí..."></textarea>
+                <div id="chatImagePreviewContainer" class="hidden mb-3 relative">
+                    <img id="chatImagePreview" src="" class="w-full h-40 object-cover rounded-xl border border-sky-500/30 shadow-lg">
+                    <button type="button" onclick="window.removeChatImage()" class="absolute top-2 right-2 bg-slate-950/80 hover:bg-rose-600 text-white rounded-full w-8 h-8 flex items-center justify-center transition">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+                
+                <div class="flex gap-2 mb-4">
+                    <textarea id="chatMessageInput" rows="3" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-sky-500 resize-none font-medium" placeholder="Escribe tu mensaje o envía una foto..."></textarea>
+                    
+                    <input type="file" id="chatImageInput" accept="image/*" capture="environment" class="hidden" onchange="window.handleChatImageSelect(event)">
+                    <button type="button" onclick="window.triggerChatImageCapture()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-400 rounded-xl px-4 flex flex-col items-center justify-center gap-1 transition active:scale-95 shadow-md" title="Tomar Foto">
+                        <i class="fa-solid fa-camera text-xl"></i>
+                        <span class="text-[9px] font-bold uppercase">Foto</span>
+                    </button>
+                </div>
+
                 <button type="submit" class="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-paper-plane"></i> <span data-i18n="chat_send">Enviar Mensaje</span>
                 </button>
@@ -894,24 +910,83 @@
         };
 
         // CHAT INTERFACE FUNCTIONS
+        let currentChatImageBase64 = null;
+
         window.openChatModal = function() {
             document.getElementById('chatModal').classList.remove('hidden');
             setTimeout(() => document.getElementById('chatMessageInput').focus(), 100);
+        };
+
+        window.triggerChatImageCapture = function() {
+            document.getElementById('chatImageInput').click();
+        };
+
+        window.handleChatImageSelect = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const btn = document.querySelector('button[onclick="window.triggerChatImageCapture()"]');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-xl"></i>`;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const maxDim = 800; // Comprimir para que fluya rápido por MQTT
+
+                    if (width > height) {
+                        if (width > maxDim) { height *= maxDim / width; width = maxDim; }
+                    } else {
+                        if (height > maxDim) { width *= maxDim / height; height = maxDim; }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Comprimir a JPEG con calidad media
+                    currentChatImageBase64 = canvas.toDataURL('image/jpeg', 0.6); 
+                    
+                    document.getElementById('chatImagePreview').src = currentChatImageBase64;
+                    document.getElementById('chatImagePreviewContainer').classList.remove('hidden');
+                    btn.innerHTML = originalHtml;
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.removeChatImage = function() {
+            currentChatImageBase64 = null;
+            document.getElementById('chatImagePreviewContainer').classList.add('hidden');
+            document.getElementById('chatImageInput').value = '';
         };
 
         window.sendChatMessage = function(e) {
             e.preventDefault();
             const input = document.getElementById('chatMessageInput');
             const text = input.value.trim();
-            if (!text) return;
+            
+            if (!text && !currentChatImageBase64) return;
             
             if (mqttClient && mqttClient.connected && activeGroupId) {
                 mqttClient.publish(`concertsafeguard/v2/room_${activeGroupId}`, JSON.stringify({
-                    type: 'chat', id: myDeviceId, name: myRegisteredName || 'Usuario', msgId: Date.now().toString(), text: text
+                    type: 'chat', 
+                    id: myDeviceId, 
+                    name: myRegisteredName || 'Usuario', 
+                    msgId: Date.now().toString(), 
+                    text: text,
+                    image: currentChatImageBase64
                 }), { qos: 0 });
             }
             
             input.value = '';
+            window.removeChatImage();
             document.getElementById('chatModal').classList.add('hidden');
             showToastNotification("Mensaje enviado al grupo.");
         };
@@ -921,7 +996,7 @@
             if (el) el.remove();
         };
 
-        window.displayChatAlert = function(senderName, text, msgId) {
+        window.displayChatAlert = function(senderName, text, msgId, imageBase64) {
             const containerId = 'chatAlertsContainer';
             let container = document.getElementById(containerId);
             if (!container) {
@@ -932,19 +1007,22 @@
             }
 
             const t = window.translations[window.currentLang] || window.translations['ca'];
+            const imgHtml = imageBase64 ? `<img src="${imageBase64}" class="w-full h-auto max-h-56 object-cover rounded-xl mb-3 border border-sky-500/30 shadow-md cursor-pointer" onclick="this.requestFullscreen ? this.requestFullscreen() : (this.webkitRequestFullscreen ? this.webkitRequestFullscreen() : null)">` : '';
+            const textHtml = text ? `<p class="text-sm font-semibold leading-relaxed mb-3">${text}</p>` : '';
 
             const alertEl = document.createElement('div');
             alertEl.id = 'chatMsg_' + msgId;
             alertEl.className = "bg-sky-900 border border-sky-400 text-white p-4 rounded-2xl shadow-[0_0_30px_rgba(14,165,233,0.4)] flex flex-col pointer-events-auto transform transition-all animate-slide-down";
             alertEl.innerHTML = `
-                <div class="flex items-center justify-between mb-2 pb-2 border-b border-sky-700/50">
+                <div class="flex items-center justify-between mb-3 pb-2 border-b border-sky-700/50">
                     <span class="text-xs font-black text-sky-300 flex items-center gap-1.5"><i class="fa-solid fa-comment-dots"></i> ${senderName} <span>${t.chat_says || 'dice:'}</span></span>
-                    <button onclick="window.dismissChatMessage('${msgId}')" class="w-7 h-7 rounded-full bg-sky-800 hover:bg-sky-700 flex items-center justify-center text-sky-200 transition active:scale-90">
+                    <button onclick="window.dismissChatMessage('${msgId}')" class="w-7 h-7 rounded-full bg-sky-800 hover:bg-sky-700 flex items-center justify-center text-sky-200 transition active:scale-90 shadow-sm">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
-                <p class="text-sm font-semibold leading-relaxed mb-3">${text}</p>
-                <button onclick="window.dismissChatMessage('${msgId}')" class="w-full py-2.5 bg-sky-700 hover:bg-sky-600 text-white text-xs font-bold rounded-xl transition shadow-md active:scale-95 flex items-center justify-center gap-2"><i class="fa-solid fa-check"></i> <span>${t.chat_understood || 'Cerrar y eliminar mensaje'}</span></button>
+                ${imgHtml}
+                ${textHtml}
+                <button onclick="window.dismissChatMessage('${msgId}')" class="w-full mt-1 py-2.5 bg-sky-700 hover:bg-sky-600 text-white text-xs font-bold rounded-xl transition shadow-md active:scale-95 flex items-center justify-center gap-2"><i class="fa-solid fa-check"></i> <span>${t.chat_understood || 'Cerrar y eliminar mensaje'}</span></button>
             `;
             container.appendChild(alertEl);
             
@@ -1274,7 +1352,7 @@
                         }
 
                         if (payload.type === 'chat') {
-                            window.displayChatAlert(payload.name, payload.text, payload.msgId);
+                            window.displayChatAlert(payload.name, payload.text, payload.msgId, payload.image);
                             return;
                         }
 
