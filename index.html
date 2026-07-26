@@ -144,7 +144,7 @@
                             <span id="cloudStatusText">Conectando...</span>
                         </span>
                     </h1>
-                    <p class="text-xs text-slate-400">Sala: <strong id="currentGroupIdDisplay" class="text-indigo-400 font-mono">Cargando...</strong></p>
+                    <p class="text-xs text-slate-400">Sala: <strong id="currentGroupIdDisplay" class="text-indigo-400 font-mono">Sin Configurar</strong></p>
                 </div>
             </div>
 
@@ -406,6 +406,7 @@
         </div>
     </div>
 
+    <!-- JOIN REQUEST MODAL FOR MOBILE DEVICES -->
     <div id="joinGroupModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[80] flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-indigo-500/40 rounded-3xl max-w-md w-full p-6 shadow-2xl relative text-center">
             <button onclick="document.getElementById('joinGroupModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center transition" title="Cerrar">
@@ -443,6 +444,7 @@
         </div>
     </div>
 
+    <!-- SHARE MODAL WITH QR CODE -->
     <div id="shareModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
             <button onclick="closeShareModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center transition">
@@ -527,7 +529,7 @@
 
                 <button type="submit" id="claimRoomSubmitBtn" class="w-full py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 transition transform active:scale-95">
                     <i class="fa-solid fa-shield-check text-sm"></i>
-                    <span>Verificar y Registrar Sala</span>
+                    <span>VERIFICAR Y REGISTRAR SALA</span>
                 </button>
             </form>
         </div>
@@ -540,13 +542,7 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         
-        let activeGroupId = urlParams.get('groupId');
-        if (!activeGroupId) {
-            activeGroupId = localStorage.getItem('concert_group_id') || '';
-        } else {
-            activeGroupId = activeGroupId.toUpperCase();
-        }
-
+        let activeGroupId = urlParams.get('groupId') ? urlParams.get('groupId').toUpperCase() : (localStorage.getItem('concert_group_id') || '');
         let activeRoomPin = urlParams.get('pin') || localStorage.getItem('concert_room_pin') || '';
         let isRoomClaimedByMe = false;
         let roomHeartbeatInterval = null;
@@ -790,7 +786,6 @@
                         const payload = JSON.parse(message.toString());
                         if (!payload) return;
 
-                        // Answer claim query if another host attempts to claim our active room
                         if (payload.type === 'claim_query' && payload.senderDeviceId !== myDeviceId) {
                             if (isRoomClaimedByMe && activeGroupId) {
                                 const responseTopic = `concertsafeguard/v2/room_${activeGroupId}`;
@@ -858,6 +853,8 @@
 
                         if (payload.id && payload.lat && payload.lng) {
                             if (removedMemberIds.has(payload.id)) return;
+                            
+                            // IGNORE SELF MSG ON HOST VIEW TO PREVENT FALSE POPUPS
                             if (payload.id === myDeviceId && !urlParams.get('joinGroup')) return;
 
                             const existing = groupMembersMap.get(payload.id);
@@ -922,126 +919,75 @@
             }
         }
 
-        async function attemptRoomClaim(requestedRoom, requestedPin, silentMode = false) {
+        async function attemptRoomClaim(requestedRoom, requestedPin) {
             const cleanRoom = requestedRoom.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
             if (!cleanRoom || cleanRoom.length < 3) {
                 return { success: false, reasonMsg: "El nombre de la sala debe tener al menos 3 caracteres alfanuméricos." };
             }
 
-            // 1. Check active presence via MQTT WebSockets
-            const mqttCheckPromise = new Promise((resolve) => {
-                let isOccupied = false;
-                let rivalHostName = '';
-                let rivalPin = '';
+            if (isRoomClaimedByMe && activeGroupId === cleanRoom) {
+                return { success: true };
+            }
 
-                if (!mqttClient || !mqttClient.connected) {
-                    initMqttSync();
-                }
+            if (!mqttClient) {
+                initMqttSync();
+            }
+
+            return new Promise((resolve) => {
+                let isOccupied = false;
+                let rivalHostName = 'Otro Líder';
+                let resolved = false;
 
                 const tempTopic = `concertsafeguard/v2/room_${cleanRoom}`;
-                
-                const tempMessageHandler = (topic, message) => {
+
+                const claimHandler = (topic, message) => {
                     if (topic === tempTopic) {
                         try {
                             const payload = JSON.parse(message.toString());
                             if (payload && payload.type === 'claim_response' && payload.hostDeviceId && payload.hostDeviceId !== myDeviceId) {
                                 isOccupied = true;
-                                rivalHostName = payload.hostName || 'Otro Líder';
-                                rivalPin = payload.pin || '';
+                                if (payload.hostName) rivalHostName = payload.hostName;
                             }
                         } catch(e) {}
                     }
                 };
 
-                if (mqttClient) {
-                    mqttClient.on('message', tempMessageHandler);
-                    mqttClient.subscribe(tempTopic, { qos: 0 });
-                    mqttClient.publish(tempTopic, JSON.stringify({
-                        type: 'claim_query',
-                        senderDeviceId: myDeviceId
-                    }), { qos: 0 });
-                }
+                const finishCheck = () => {
+                    if (resolved) return;
+                    resolved = true;
 
-                setTimeout(() => {
                     if (mqttClient) {
-                        mqttClient.off('message', tempMessageHandler);
+                        try {
+                            mqttClient.off('message', claimHandler);
+                            mqttClient.unsubscribe(tempTopic);
+                        } catch(e) {}
                     }
+
                     if (isOccupied) {
-                        if (rivalPin && requestedPin && rivalPin === requestedPin) {
-                            resolve({ ok: true });
-                        } else {
-                            resolve({
-                                ok: false,
-                                msg: `La sala '${cleanRoom}' ya está activa y siendo utilizada por otro líder (${rivalHostName}). Por favor elige un nombre de sala único.`
-                            });
-                        }
+                        resolve({
+                            success: false,
+                            reasonMsg: `La sala '${cleanRoom}' ya está activa y siendo utilizada por ${rivalHostName}. Por favor elige otro nombre de sala.`
+                        });
                     } else {
-                        resolve({ ok: true });
+                        resolve({ success: true });
                     }
-                }, 1200);
-            });
+                };
 
-            const mqttResult = await mqttCheckPromise;
-            if (!mqttResult.ok) {
-                return { success: false, reasonMsg: mqttResult.msg };
-            }
+                const timer = setTimeout(finishCheck, 1000);
 
-            // 2. Firestore Cloud Check
-            await authReadyPromise;
-
-            if (db && currentUser) {
                 try {
-                    const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'room_claims', cleanRoom);
-                    const docSnap = await getDoc(roomDocRef);
-
-                    const now = Date.now();
-                    const activeThreshold = 10 * 60 * 1000;
-
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        const isOtherHost = data.hostDeviceId && data.hostDeviceId !== myDeviceId;
-                        const isStillActive = (now - (data.lastActive || 0)) < activeThreshold;
-
-                        if (isOtherHost && isStillActive) {
-                            const hasCorrectPin = data.pin && requestedPin && data.pin === requestedPin;
-                            if (!hasCorrectPin) {
-                                return {
-                                    success: false,
-                                    reasonMsg: `La sala '${cleanRoom}' ya está activa y siendo utilizada por otro líder (${data.hostName || 'Usuario'}). Por favor elige un nombre de sala diferente.`
-                                };
-                            }
-                        }
+                    if (mqttClient) {
+                        mqttClient.on('message', claimHandler);
+                        mqttClient.subscribe(tempTopic, { qos: 0 });
+                        mqttClient.publish(tempTopic, JSON.stringify({
+                            type: 'claim_query',
+                            senderDeviceId: myDeviceId
+                        }), { qos: 0 });
                     }
-
-                    await setDoc(roomDocRef, {
-                        roomId: cleanRoom,
-                        hostDeviceId: myDeviceId,
-                        hostName: myRegisteredName || 'Líder GPS',
-                        createdAt: docSnap.exists() ? (docSnap.data().createdAt || now) : now,
-                        lastActive: now,
-                        pin: requestedPin || ''
-                    }, { merge: true });
-
-                } catch (e) {
-                    console.warn("Firestore claim check warning:", e);
+                } catch(e) {
+                    console.warn("MQTT query send error:", e);
                 }
-            }
-
-            activeGroupId = cleanRoom;
-            activeRoomPin = requestedPin || '';
-            isRoomClaimedByMe = true;
-
-            localStorage.setItem('concert_group_id', activeGroupId);
-            localStorage.setItem('concert_room_pin', activeRoomPin);
-
-            document.getElementById('currentGroupIdDisplay').innerText = activeGroupId;
-            document.getElementById('groupCodeBadgeInline').innerText = activeGroupId;
-            document.getElementById('modalGroupCodeText').innerText = activeGroupId;
-            document.getElementById('modalGroupIdLabel').innerText = activeGroupId;
-
-            startHostPresenceHeartbeat();
-
-            return { success: true };
+            });
         }
 
         function startHostPresenceHeartbeat() {
@@ -1537,7 +1483,7 @@
                         <div class="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-500 mx-auto mb-3">
                             <i class="fa-solid fa-mobile-screen-button text-2xl"></i>
                         </div>
-                        <p class="text-xs text-slate-300 font-bold mb-1">Esperando señal en sala ${activeGroupId}</p>
+                        <p class="text-xs text-slate-300 font-bold mb-1">Esperando señal en sala ${activeGroupId || '...'}</p>
                         <p class="text-[11px] text-slate-500 mb-4 leading-relaxed">Abre la cámara del otro teléfono y escanea el QR para vincularlo.</p>
                         <button onclick="openScanToLocateModal()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-bold transition shadow-lg shadow-indigo-600/30">
                             <i class="fa-solid fa-qrcode mr-1"></i> Ver Código QR
@@ -1686,37 +1632,79 @@
         };
 
         window.handleHostRoomSubmit = async function(e) {
-            e.preventDefault();
-            const roomInput = document.getElementById('hostRoomNameInput').value;
-            const pinInput = document.getElementById('hostRoomPinInput').value;
+            if (e) e.preventDefault();
+
+            const nameInput = document.getElementById('hostRoomNameInput');
+            const pinInput = document.getElementById('hostRoomPinInput');
             const submitBtn = document.getElementById('claimRoomSubmitBtn');
             const feedback = document.getElementById('roomClaimFeedback');
 
+            if (!nameInput || !submitBtn) return;
+
+            const rawRoom = nameInput.value;
+            const rawPin = pinInput ? pinInput.value : '';
+
             submitBtn.disabled = true;
-            submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin mr-1"></i> Comprobando disponibilidad...`;
+            submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin mr-1"></i> VERIFICANDO SALA...`;
 
-            feedback.className = "p-3 rounded-xl text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 block";
-            feedback.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin mr-1"></i> Verificando exclusividad de la sala en el servidor...`;
+            if (feedback) {
+                feedback.className = "p-3 rounded-xl text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 block";
+                feedback.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin mr-1"></i> Comprobando disponibilidad en tiempo real...`;
+            }
 
-            const cleanRoom = roomInput.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
-            const result = await attemptRoomClaim(cleanRoom, pinInput.trim());
+            try {
+                const result = await attemptRoomClaim(rawRoom, rawPin);
 
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = `<i class="fa-solid fa-shield-check text-sm"></i> <span>Verificar y Registrar Sala</span>`;
+                if (result.success) {
+                    const cleanRoom = rawRoom.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
 
-            if (result.success) {
-                feedback.className = "p-3 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 block";
-                feedback.innerHTML = `<i class="fa-solid fa-circle-check mr-1 text-emerald-400"></i> ¡Sala '${activeGroupId}' registrada con éxito para tu uso exclusivo!`;
+                    // Clear previous member states and map markers
+                    groupMembersMap.clear();
+                    Object.keys(memberMarkers).forEach(id => {
+                        if (memberMarkers[id] && map) map.removeLayer(memberMarkers[id]);
+                    });
+                    memberMarkers = {};
 
-                initMqttSync();
+                    activeGroupId = cleanRoom;
+                    activeRoomPin = rawPin;
+                    isRoomClaimedByMe = true;
 
-                setTimeout(() => {
-                    document.getElementById('hostRoomModal').classList.add('hidden');
-                    showToastNotification(`🔒 Sala exclusiva activa: ${activeGroupId}`);
-                }, 1000);
-            } else {
-                feedback.className = "p-3 rounded-xl text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 block";
-                feedback.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1 text-rose-400"></i> ${result.reasonMsg}`;
+                    localStorage.setItem('concert_group_id', activeGroupId);
+                    localStorage.setItem('concert_room_pin', activeRoomPin);
+
+                    document.getElementById('currentGroupIdDisplay').innerText = activeGroupId;
+                    document.getElementById('groupCodeBadgeInline').innerText = activeGroupId;
+                    document.getElementById('modalGroupCodeText').innerText = activeGroupId;
+                    document.getElementById('modalGroupIdLabel').innerText = activeGroupId;
+
+                    if (feedback) {
+                        feedback.className = "p-3 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 block";
+                        feedback.innerHTML = `<i class="fa-solid fa-circle-check mr-1 text-emerald-400"></i> ¡Sala '${activeGroupId}' verificada y reservada para ti!`;
+                    }
+
+                    initMqttSync();
+                    syncRosterAndMap();
+
+                    setTimeout(() => {
+                        document.getElementById('hostRoomModal').classList.add('hidden');
+                        showToastNotification(`🔒 Sala exclusiva activa: ${activeGroupId}`);
+                    }, 600);
+
+                } else {
+                    if (feedback) {
+                        feedback.className = "p-3 rounded-xl text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 block";
+                        feedback.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1 text-rose-400"></i> ${result.reasonMsg}`;
+                    }
+                }
+            } catch (err) {
+                console.error("Room claim submit error:", err);
+                if (feedback) {
+                    feedback.className = "p-3 rounded-xl text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 block";
+                    feedback.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1 text-rose-400"></i> Error al verificar sala. Inténtalo de nuevo.`;
+                }
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<i class="fa-solid fa-shield-check text-sm"></i> <span>VERIFICAR Y REGISTRAR SALA</span>`;
             }
         };
 
@@ -1994,7 +1982,7 @@
             window.startHostGpsTracking();
             initOrientationSensor();
             
-            await authReadyPromise;
+            authReadyPromise.catch(()=>{});
 
             if (urlParams.get('joinGroup')) {
                 initMqttSync();
